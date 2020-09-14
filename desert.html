@@ -30,7 +30,27 @@
         const vec3 _LargeWavePowStre = vec3(0.6, 2.96, -2.08) ;
         const vec3 _LargeWaveOffset = vec3(-3.25, 4.41, -11.64) ;
 
-        vec3 _CameraPosition = vec3(1.0, 2.2, 19.6);
+        vec3 _CameraPosition = vec3(0.0, 0.5, 3.0);
+
+        float rand(float n){
+            return fract(sin(n) * 43758.5453123);
+        }
+
+        float rand(vec2 n) { 
+            return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453);
+        }
+
+        float noise(float p){
+            float fl = floor(p);
+            float fc = fract(p);
+            return mix(rand(fl), rand(fl + 1.0), fc);
+        }
+
+        float noise(vec2 n) {
+            const vec2 d = vec2(0.0, 1.0);
+            vec2 b = floor(n), f = smoothstep(vec2(0.0), vec2(1.0), fract(n));
+            return mix(mix(rand(b), rand(b + d.yx), f.x), mix(rand(b + d.xy), rand(b + d.yy), f.x), f.y);
+        }
 
         float smin( float a, float b, float k )
         {
@@ -38,52 +58,71 @@
             return mix( b, a, h ) - k*h*(1.0-h);
         }
 
-        float sdLargeWaves( in vec3 pos )
+        float sdPlane( in vec3 pos )
         {
-            float distZ = abs(pos.z - _CameraPosition.z);
-            float distX = abs(pos.x - _CameraPosition.x);
-            float dist = (distZ ) + (distX * 0.1);
-            dist = dist * dist * 0.01;
 
-            float largeWaves = (sin(_LargeWaveOffset.z + pos.z * _LargeWaveDetail.y + pos.z * 0.02) * sin((_LargeWaveOffset.x + dist) + (pos.x * _LargeWaveDetail.x)) * 0.5) + 0.5;
+            float fh = -1.0 + 0.26 * (sin(0.7*pos.x) + sin(0.5*pos.z));
+            fh += pow(fh, 2.3);
 
-            largeWaves = -_LargeWaveOffset.y + pow( largeWaves, _LargeWavePowStre.x) *  _LargeWavePowStre.y;
+            float d = pos.y - fh;
 
-            largeWaves = smin(largeWaves, _LargeWavePowStre.z, 0.2);
-            largeWaves = (largeWaves - dist);
+            return d;
+        }
 
-            float plane = pos.y + 1.9;
+        float sdSphere( in vec3 pos, in float radius ) {
 
-            return plane + largeWaves;
+            float z = -2.0 + u_time;
+            float y = 0.0 + ((1.0 + sin(u_time * 0.5)) * 1.0);
+            vec3 cen = vec3(0.0, y, z);
+
+            return length(pos - cen) - radius;
+        }
+
+        float sdCone( in vec3 p, in vec2 c, in float h ) {
+            float y = 2.0;
+
+            vec3 po = p;
+            float q = length(p.xz);
+            return max(dot(c.xy, vec2( q, p.y )), -h-p.y);
         }
 
 
-        float map(in vec3 pos) {
-            float d1 = length(pos) -5.25;
-            float d2 = sdLargeWaves(pos);
+        vec2 map(in vec3 pos) {
+            float d = -1.0;
 
-            return min(d1, d2);
+            float d1 = sdSphere(pos, 1.);
+
+            float d2 = sdPlane(pos);
+
+            d = smin(d1, d2, 0.5);
+
+            if (d1 < d2) {
+                return vec2(d, 2.0);
+            } else {
+                return vec2(d, 1.0);
+            }
         }
 
         vec3 calcNormal(in vec3 pos) {
             vec2 e = vec2(0.0001, 0.0);
-            return normalize( vec3( map(pos+e.xyy)-map(pos-e.xyy),
-                                    map(pos+e.yxy)-map(pos-e.yxy),
-                                    map(pos+e.yyx)-map(pos-e.yyx)));
+            return normalize( vec3( map(pos+e.xyy).x-map(pos-e.xyy).x,
+                                    map(pos+e.yxy).x-map(pos-e.yxy).x,
+                                    map(pos+e.yyx).x-map(pos-e.yyx).x));
         }
 
-        float castRay(in vec3 ro, vec3 rd) {
+        vec2 castRay(in vec3 ro, vec3 rd) {
+            float m = -1.0;
             float t = 0.0;
             for (int i = 0; i < 100; i++) {
                 vec3 pos = ro + t*rd;
 
-                float h = map(pos);
-
-                if (h < 0.001) {
+                vec2 h = map(pos);
+                m = h.y;
+                if (h.x < 0.001) {
                     break;
                 }
 
-                t += h;
+                t += h.x;
 
                 if (t > 20.0) {
                     break;
@@ -91,11 +130,66 @@
             }
 
             if (t > 20.0) {
-                t=-1.0;
+                m=-1.0;
             }
 
-            return t;
+            return vec2(t, m);
         }
+
+        float castShadow(in vec3 ro, vec3 rd) {
+            float res = 1.0;
+
+            float t = 0.001;
+            for (int i = 0; i < 100; i++) {
+                vec3 pos = ro + t*rd;
+                float h = map(pos).x;
+
+                res = min( res, 16.0*h / t );
+
+                if ( h < 0.0001 ) break;
+
+                t += h;
+
+                if (t > 20.0) break;
+            }
+
+            return res;
+        }
+
+
+        vec3 nlerp(vec3 n1, vec3 n2, float t){
+            return normalize(mix(n1, n2, t));
+        }
+
+
+        float diffuse(vec3 n, vec3 l) {
+            n.y *= 0.3;
+            float nDotL = clamp(4. * dot(n, l), 0.0, 1.0);
+            return nDotL;
+        }
+
+        float rim(vec3 n, vec3 v) {
+            float rim = 1.0 - clamp(dot(n, v), 0.0, 1.0);
+            rim = clamp(pow(rim, 70.3) * 0.9, 0.0, 1.0);
+            return rim;
+        }
+
+        float oceanSpecular(vec3 n, vec3 l, vec3 v) {
+            // Blinn-Phong
+            vec3 h = normalize(v + l); // Half direction
+            float NdotH = max(0., dot(n, h));
+            float specular = pow(NdotH, 600.0) * 0.9;
+            return specular;
+        }
+
+        vec3 sandNormal(vec3 pos, vec3 n) {
+            vec3 random = vec3(noise(pos.xz * 200.), noise(pos.yx * 200.), noise(pos.zx * 200.));
+            vec3 s = normalize(random);
+
+            vec3 Ns = nlerp(n, s, 0.03);
+            return Ns;
+        }
+
 
         void main() {
             vec2 p = (2.0 * gl_FragCoord.xy - u_resolution.xy) / u_resolution.y;
@@ -103,11 +197,11 @@
             float an = 0.1 * u_time;
 
             // Camera target
-            vec3 ta = vec3(0., 0., 0.);
+            vec3 ta = vec3(0., 0.5, 0.);
 
-            _CameraPosition.x += sin(u_time);
+            _CameraPosition.z += u_time;
             // Ray origin
-            vec3 ro = ta + _CameraPosition;
+            vec3 ro = _CameraPosition;
 
             // Camera vectors
             vec3 ww = normalize(ta - ro);
@@ -115,7 +209,7 @@
             vec3 vv = normalize(cross(uu,ww));
 
             // Ray direction
-            float fov = 1.0;
+            float fov = 1.6;
             vec3 rd = normalize(p.x * uu + p.y * vv + fov * ww);
 
             // Color
@@ -123,24 +217,41 @@
             col = mix(col, vec3(0.7, 0.75, 0.8), exp(-10.0*rd.y));
 
             // Ray marching
-            float t = castRay(ro, rd);
-            if (t > 0.0) {
+            vec2 tm = castRay(ro, rd);
+            if (tm.y > 0.0) {
+                float t = tm.x;
                 vec3 pos = ro + t*rd;
                 vec3 nor = calcNormal(pos);
+                nor = sandNormal(pos, nor);
 
-                vec3 mate = vec3(0.18);
+                vec3 sun_dir = normalize(vec3(-1.8, 4.4, -3.2));
 
-                vec3 sun_dir = normalize(vec3(0.8, 0.4, 0.2));
 
-                float sun_dif = clamp(dot(nor, sun_dir), 0.0, 1.0);
-                float sun_sha = step(castRay(pos + nor*0.001, sun_dir), 0.0);
-                float sky_dif = clamp( 0.5 + 0.5*dot(nor, vec3(0.0, 1.0, 0.0)), 0.0, 1.0);
+                vec3 mate = vec3(0.18, 0.16, 0.13);
+
+                if (tm.y > 1.5) {
+                    mate = vec3(0.8, 0.1, 0.1);
+                }
+
+
+                float sun_sha = clamp(castShadow(pos+nor*0.01, sun_dir), 0.0 ,1.0);
+                float sun_dif = diffuse(nor, sun_dir);
+
+                float sky_dif = 0.9 * diffuse(nor, vec3(0.0, 1.0, 0.0));
+
+                float rim = rim(nor, -rd);
+                float oceanSpec = oceanSpecular(nor, sun_dir, -rd);
+
+                float spec = clamp(max(rim, oceanSpec), 0.0, 1.0);
 
                 float bounce_dif = clamp(0.5 + 0.5*dot(nor, vec3(0.0, -1.0, 0.0)), 0.0, 1.0);
 
-                col = mate * vec3(7.0, 5.0, 3.0) * sun_dif * sun_sha;
+                col = mate * vec3(6.0, 4.0, 2.0) * sun_dif * sun_sha;
+                col += mate * vec3(2.0, 2.0, 2.0) * spec;
                 col += mate * vec3(0.5, 0.8, 0.9) * sky_dif;
-                col += mate * vec3(0.7, 0.3, 0.2) * bounce_dif;
+                col += mate * vec3(0.7, 0.1, 0.1) * bounce_dif;
+
+                //col = vec3(max(rim, oceanSpec));
             }
 
             col = pow( col, vec3(0.4545) );
