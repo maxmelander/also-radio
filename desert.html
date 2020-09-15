@@ -64,7 +64,11 @@
             float fh = -1.0 + 0.26 * (sin(0.7*pos.x) + sin(0.5*pos.z));
             fh += pow(fh, 2.3);
 
-            float d = pos.y - fh;
+            float hf = sin(70.*pos.y);
+
+            float hf2 = sin(20.*pos.x);
+
+            float d = pos.y - (fh + (0.001* hf * pos.y) + (0.0005 * hf2));
 
             return d;
         }
@@ -182,6 +186,21 @@
             return specular;
         }
 
+        float glitterSpecular(vec3 pos, vec3 n, vec3 l, vec3 v) {
+            vec3 random = normalize(vec3(noise(pos.xz * 100.), noise(pos.yx * 100.), noise(pos.zx * 100.)) * 2. - 1.);
+
+            vec3 rG = reflect(-l, random);
+            float nDotRg = max(0.0, dot(rG, v));
+
+            vec3 r = reflect(-l, n);
+            float nDotV = pow(max(0.0, dot(r, v)), 98.);
+
+            if (nDotRg > 0.05) {
+                return 0.0;
+            }
+            return (nDotRg * (nDotV + (random.y * 0.1)));
+        }
+
         vec3 sandNormal(vec3 pos, vec3 n) {
             vec3 random = vec3(noise(pos.xz * 200.), noise(pos.yx * 200.), noise(pos.zx * 200.));
             vec3 s = normalize(random);
@@ -213,8 +232,8 @@
             vec3 rd = normalize(p.x * uu + p.y * vv + fov * ww);
 
             // Color
-            vec3 col = vec3(0.4, 0.75, 1.0) - 0.7*rd.y;
-            col = mix(col, vec3(0.7, 0.75, 0.8), exp(-10.0*rd.y));
+            vec3 col = vec3(0.65, 0.65, 0.9);
+            col = mix(col, vec3(0.95, 0.95, 0.9), exp(-10.0*rd.y));
 
             // Ray marching
             vec2 tm = castRay(ro, rd);
@@ -224,7 +243,7 @@
                 vec3 nor = calcNormal(pos);
                 nor = sandNormal(pos, nor);
 
-                vec3 sun_dir = normalize(vec3(-1.8, 4.4, -3.2));
+                vec3 sun_dir = normalize(vec3(-1.8, 2.4, -3.2));
 
 
                 vec3 mate = vec3(0.18, 0.16, 0.13);
@@ -241,6 +260,7 @@
 
                 float rim = rim(nor, -rd);
                 float oceanSpec = oceanSpecular(nor, sun_dir, -rd);
+                float glitterSpec = glitterSpecular(pos, nor, sun_dir, -rd);
 
                 float spec = clamp(max(rim, oceanSpec), 0.0, 1.0);
 
@@ -248,10 +268,12 @@
 
                 col = mate * vec3(6.0, 4.0, 2.0) * sun_dif * sun_sha;
                 col += mate * vec3(2.0, 2.0, 2.0) * spec;
-                col += mate * vec3(0.5, 0.8, 0.9) * sky_dif;
-                col += mate * vec3(0.7, 0.1, 0.1) * bounce_dif;
+                col += mate * vec3(70., 60., 20.) * glitterSpec;
+                col += mate * vec3(0.5, 0.7, 0.9) * sky_dif;
+                col += mate * vec3(0.6, 0.1, 0.1) * bounce_dif;
 
                 //col = vec3(max(rim, oceanSpec));
+                //col = vec3(glitterSpec);
             }
 
             col = pow( col, vec3(0.4545) );
