@@ -90,16 +90,20 @@ float snoise(vec2 v){
 
 
 
-        float smoothCurve( float x ) {
-            return x * x *( 3.0 - 2.0 * x );
+        float smoothCurve( float x, float smoothingFactor ) {
+            return x * x *( (3.0 - smoothingFactor) - (2.0 - smoothingFactor) * x );
         }
 
         float triangleWave( float x ) {
             return abs( fract( x + 0.5 ) * 2.0 - 1.0 );
         }
 
+        float sharpTriangleWave( float x ) {
+            return smoothCurve( triangleWave( x ), 0.5 );
+        }
+
         float smoothTriangleWave( float x ) {
-            return smoothCurve( triangleWave( x ) );
+            return smoothCurve( triangleWave( x ), 0.0 );
         } 
 
         float smin( float a, float b, float k )
@@ -111,13 +115,13 @@ float snoise(vec2 v){
         float sdPlane( in vec3 pos )
         {
 
-            float fh = -1.0 + 0.8 * (smoothTriangleWave(-0.2 + (0.1*pos.x) + 0.1*smoothTriangleWave(pos.x*0.1) + 0.1*smoothTriangleWave(pos.x*0.02)) + smoothTriangleWave(0.06*pos.z + 0.01*smoothTriangleWave(pos.z*0.2)));
+            float fh = -1.0 + 0.9 * (sharpTriangleWave(-0.2 + (0.1*pos.x) + 0.17*smoothTriangleWave(pos.x*0.1) + 0.3*smoothTriangleWave(pos.x*0.02)) + smoothTriangleWave(0.06*pos.z + 0.01*smoothTriangleWave(pos.z*0.2)));
             fh += pow(fh, 1.7);
 
-            float hf = smoothTriangleWave(2.6*(pos.z + 0.02*smoothTriangleWave((pos.x + (u_time * 0.8)) * 2.6))); //+ smoothTriangleWave(20.*pos.y);
+            float hf = smoothTriangleWave(3.6*(pos.z + 0.02*smoothTriangleWave((pos.x + (u_time * 0.8)) * 2.6))); //+ smoothTriangleWave(20.*pos.y);
             float hf2 = smoothTriangleWave(2.*pos.x + (u_time * 1.));
 
-            float d = pos.y - (fh + (0.025* hf * (clamp(-pos.y + 0.2, 0., 1.))) + (0.002 * hf2 * (pos.y)));
+            float d = pos.y - (fh + (0.025* hf * (clamp(-pos.y + 0.2, 0., 1.))) + (0.0026 * hf2 * (pos.y)));
 
             return d;
         }
