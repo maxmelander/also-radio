@@ -7,12 +7,20 @@
     <style type="text/css">
           body {
             margin: 0;
+            with: 100vw;
+            height: 100vw;
+            background: black;
           }
 
           #canvas {
-            width: 100vw;
-            height: 100vh;
+            width: 90vw;
+            height: 90vh;
             box-sizing: border-box;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 24px;
           }
 
           button {
@@ -451,7 +459,7 @@
         const playButton = document.querySelector('button');
         playButton.addEventListener('click', () => {
             audioContext.resume();
-            audioElement.currentTime = 1100;
+            audioElement.currentTime = 1120;
             audioElement.play();
         });           
 
