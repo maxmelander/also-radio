@@ -3,38 +3,74 @@
 <head>
     <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
     <meta content="utf-8" http-equiv="encoding">
-    <title>DESERT STORM BRO</title>
+    <title>Also Radio</title>
     <style type="text/css">
           body {
             margin: 0;
-            with: 100vw;
-            height: 100vw;
+            width: 100vw;
+            height: 100vh;
             background: black;
           }
 
+          h1, p {              
+              font-family: 'helvetica';
+          }
+
+          p {
+              font-size: 24px;
+              padding: 12px;
+              border-radius: 12px;
+              margin: 0;
+          }
+
+          p:hover {
+              cursor: pointer;
+          }
+
           #canvas {
-            width: 90vw;
-            height: 90vh;
+            width: 80vw;
+            height: 80vh;
             box-sizing: border-box;
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             border-radius: 24px;
+            z-index: 0;
+          }
+
+          #tracklist {
+              position: absolute;
+              bottom: 12px;    
+              right: 12px;  
+          }
+
+          .track--selected p {
+              background: white;
+              color: black;
           }
 
           button {
               z-index: 9999;
           }
+
+          h1 {
+              color: white;
+              font-size: 69px;
+              position: absolute;
+              z-index: 1;
+          }
+
+          p {
+              color: white; 
+          }
     </style>
 </head>
 <body>
     <canvas id="canvas"></canvas>
-    <button>play</button>
-    <audio crossOrigin="anonymous">
-        <source src="radio-1.mp3" type="audio/mpeg">
+    <div id="tracklist"></div>
+    <audio crossOrigin="anonymous" src= type="audio/mpeg">
     </audio>
-
     <script type="text/javascript" src=
     "https://rawgit.com/patriciogonzalezvivo/glslCanvas/master/dist/GlslCanvas.js">
     </script>
@@ -48,7 +84,6 @@
         uniform float u_mid;
         uniform float u_high;
         uniform sampler2D u_texture;
-        uniform sampler2D u_noise;
 
         vec3 _CameraPosition = vec3(0.0, 0.6, 3.0);
 
@@ -70,7 +105,7 @@
         vec3 _SkyColor = vec3(0.0, 0.0, 0.1);
         vec3 _BounceColor = vec3(0.04, 0.0, 0.0);
         vec3 _GlitterColor = vec3(0.2, 0.1, 0.2);
-        vec3 _OceanColor = vec3(0.9, 0.9, 0.9);
+        vec3 _OceanColor = vec3(1.9, 0.9, 0.9);
         vec3 _DistanceColor = vec3(0.03, 0.03, 0.05);
         vec3 _SphereSpecColor = vec3(0.1, 0.0, 0.0);
         #endif
@@ -142,7 +177,7 @@
             float hf = smoothTriangleWave(3.6*(pos.z + 0.02*smoothTriangleWave((pos.x + (u_time * 0.8)) * 2.6))); //+ smoothTriangleWave(20.*pos.y);
             float hf2 = smoothTriangleWave(2.*pos.x + (u_time * 1.));
 
-            float d = pos.y - (fh + ((0.098*(u_high*0.8))* hf * (clamp(-pos.y + 0.2, 0., 1.))) + (0.0026 * hf2 * (pos.y)));
+            float d = pos.y - (fh + ((0.138*(u_high*2.0))* hf * (clamp(-pos.y + 0.2, 0., 1.))) + (0.0026 * hf2 * (pos.y)));
 
             return d;
         }
@@ -156,7 +191,7 @@
 
         float sdSphere( in vec3 pos, in float radius ) {
 
-            float z = -2.0- (u_time + u_mid);
+            float z = -2.0- (u_time - (u_mid * 1.2));
             float y = -0.3 + ((0.6 + smoothTriangleWave(u_time * 0.1)) * 0.7);
             vec3 cen = vec3(mix(-0.3, 0.3, smoothTriangleWave(u_time * 0.015)), y, z);
                          
@@ -224,7 +259,7 @@
 
             float t = tmin;
 
-            for (int i = 0; i < 400; i++) {
+            for (int i = 0; i < 350; i++) {
                 vec2 h = map(ro+rd*t);
                 if (abs(h.x) < 0.01) {
                     res = vec2(t, h.y);
@@ -301,7 +336,6 @@
 
         vec3 sandNormal(vec2 uv, vec3 n) {
             vec3 random = vec3(snoise(uv * 1420.), snoise(uv * 1420.), snoise(uv * 1500.));
-            //vec3 random = texture2D(u_noise, fract(uv * 12.)).rgb;
             vec3 s = normalize(random);
 
             vec3 Ns = nlerp(n, s, 0.02);
@@ -345,7 +379,6 @@
             vec3 ta = _CameraPosition - vec3(0., 0.5, 800.);
 
             _CameraPosition.z -= u_time;
-            // _CameraPosition.x += 0. + (0.2 * sin(u_time * 0.2));
             // Ray origin
             vec3 ro = _CameraPosition;
 
@@ -369,17 +402,18 @@
             //sky_uv = (sky_uv + 1.0) / 2.;
 
             // Animation: soon/moon
-            sky_uv.x += 0.02 - (0.1 * smoothTriangleWave(u_time * 0.15));
+            float sun_pos_wave = (smoothTriangleWave(u_time * 0.1) * 2.) - 1.;
+            sky_uv.x += 0.02 - (0.1 * sun_pos_wave);
 
             vec4 logo_hue = vec4(1.2, 1.0, 1.0, 2.0);
             vec4 logo_blur = clamp(blur(u_texture, logo_uv), 0., 1.);
             vec4 logo = clamp(texture2D(u_texture, logo_uv), 0., 1.);
-            vec4 logo_color = clamp(logo * (0.7 + u_bass) + (logo_blur * (u_bass * 0.6)), 0.0 , 1.0) * logo_hue;
+            vec4 logo_color = clamp(logo * (0.2 + u_bass) + (logo_blur * (u_bass * 0.4)), 0.0 , 1.0) * logo_hue;
 
             float d = length(sky_uv);
             float m = .01 / d;//smoothstep(.2, .05, d);
 
-            col +=  (min(m, 0.9) * vec3(0.2 + (u_mid * 0.3), 0.2, 0.4));
+            col +=  (min(m, 0.9) * vec3(0.2 + (u_mid * 0.5), 0.2, 0.4));
             col += logo_color.rgb;
 
             // Ray marching
@@ -393,7 +427,7 @@
 
                 // Lights
                 vec3 ocean_light = normalize(vec3(0., 2., -3.));
-                vec3 sun_dir = normalize(vec3(0. + 4.* smoothTriangleWave(u_time * 0.15), 5.6, -3.2));
+                vec3 sun_dir = normalize(vec3(0. + 4.* sun_pos_wave, 5.6, -3.2));
 
                 // Lighting
                 float occ = calcOcclusion(pos, sand_nor);
@@ -441,13 +475,67 @@
         }
     </script>
     <script type="text/javascript">
+        let tracks = [];
 
+        const infoUrl = "https://api.soundcloud.com/users/287905929/tracks?client_id=9e05e349251475056d1bc81acbf08c71&secret_token=track";
+
+        let selectedTrack = null;
+    
+        fetch(infoUrl)
+            .then(response => response.json())
+            .then(data => {
+                tracks = data.map(t => {
+                    return {
+                        id: t.id, title: t.title
+                    }});
+
+                selectedTrack = tracks[0];
+
+                console.log(data);
+
+                const parent = document.getElementById("tracklist");
+                data.forEach((track, i) => {
+                    const child = document.createElement("div");
+                    child.id = track.id;
+                    child.onclick = () => {
+                        handleTrackClick(i);
+                    }
+
+                    child.insertAdjacentHTML("beforeend", `<p>${track.title}</p>`);
+                    parent.appendChild(child);
+                })
+            });
+
+        const getStreamUrl = (trackId) => (
+            `https://api.soundcloud.com/tracks/${trackId}/stream?client_id=9e05e349251475056d1bc81acbf08c71&secret_token=track`
+        )
+    
         // Audio setup
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         const audioContext = new AudioCtx();
         const analyser = audioContext.createAnalyser();
-        const audioElement = document.querySelector('audio');
+        const audioElement = document.querySelector('audio');                                                                       
         const audioSource = audioContext.createMediaElementSource(audioElement);
+
+        const play = () => {
+            if (selectedTrack) {
+                audioElement.src = getStreamUrl(selectedTrack.id);
+                audioContext.resume();
+                audioElement.currentTime = 200;
+                audioElement.play();               
+            }
+        }
+
+        const handleTrackClick = (trackIndex) => {
+            const oldElement = document.getElementById(`${selectedTrack.id}`)
+            oldElement.classList.remove("track--selected");
+
+            selectedTrack = tracks[trackIndex];
+
+            const newElement = document.getElementById(`${selectedTrack.id}`)
+            newElement.classList.add("track--selected");
+            play();         
+        }
 
         audioSource.connect(analyser);      
         analyser.connect(audioContext.destination);       
@@ -456,13 +544,6 @@
         var bufferLength = analyser.frequencyBinCount;
         var dataArray = new Uint8Array(bufferLength);
                                               
-        const playButton = document.querySelector('button');
-        playButton.addEventListener('click', () => {
-            audioContext.resume();
-            audioElement.currentTime = 1120;
-            audioElement.play();
-        });           
-
         // Canvas setup
         const fs = document.getElementById("FSHADER_SOURCE").textContent;
         const canvas = document.querySelector("#canvas");
@@ -473,13 +554,12 @@
 
         // Uniforms
         sandbox.setUniform("u_texture","logo.jpg");
-        sandbox.setUniform("u_noise","noise.png");
 
         console.log("BUFFER LENGTH");
         console.log(bufferLength);
         const update = (timestamp) => {
             analyser.getByteFrequencyData(dataArray);
-            const bass = dataArray.slice(0, 3).reduce((acc, e) => acc+e) / 3;
+            const bass = dataArray.slice(0, 4).reduce((acc, e) => acc+e) / 4;
             const mid = dataArray.slice(100, 300).reduce((acc, e) => acc+e) / 199;
             const high = dataArray.slice(300, 500).reduce((acc, e) => acc+e) / 199;
             sandbox.setUniform("u_bass", bass / 255);
