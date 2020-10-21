@@ -68,6 +68,7 @@
 </head>
 <body>
     <canvas id="canvas"></canvas>
+    <h1 id="fps"></h1>
     <div id="tracklist"></div>
     <audio crossOrigin="anonymous" src= type="audio/mpeg">
     </audio>
@@ -84,31 +85,54 @@
         uniform float u_mid;
         uniform float u_high;
         uniform sampler2D u_texture;
+        uniform float u_tod; // time of day mix from 0 -> 1
 
         vec3 _CameraPosition = vec3(0.0, 0.6, 3.0);
 
         /* COLORS */
-        #ifdef DAY
-        vec3 _SkyTopColor = vec3(0.18, 0.55, 1.0);
-        vec3 _SkyBottomColor = vec3(0.95, 0.95, 0.9);
-        vec3 _SunColor = vec3(5.4, 3.1, 2.0);
-        vec3 _SkyColor = vec3(0.5, 0.6, 0.9);
-        vec3 _BounceColor = vec3(0.6, 0.1, 0.1);
-        vec3 _GlitterColor = vec3(0.5, 0.5, 0.3);
-        vec3 _OceanColor = vec3(10.0, 10.0, 5.0);
-        vec3 _DistanceColor = vec3(0.3, 0.3, 0.35);
-        vec3 _SphereSpecColor = vec3(3.0, 3.0, 2.0);
-        #else
-        vec3 _SkyTopColor = vec3(0.00, 0.00, 0.01);
-        vec3 _SkyBottomColor = vec3(0.01, 0.01, 0.02);
-        vec3 _SunColor = vec3(0.1, 0.2, 0.6);
-        vec3 _SkyColor = vec3(0.0, 0.0, 0.1);
-        vec3 _BounceColor = vec3(0.04, 0.0, 0.0);
-        vec3 _GlitterColor = vec3(0.2, 0.1, 0.2);
-        vec3 _OceanColor = vec3(1.9, 0.9, 0.9);
-        vec3 _DistanceColor = vec3(0.03, 0.03, 0.05);
-        vec3 _SphereSpecColor = vec3(0.1, 0.0, 0.0);
-        #endif
+
+        // Day
+        vec3 _SkyTopColor_0 = vec3(0.18, 0.55, 1.0);
+        vec3 _SkyBottomColor_0 = vec3(0.95, 0.95, 0.9);
+        vec3 _SunColor_0 = vec3(5.4, 3.1, 2.0);
+        vec3 _SkyColor_0 = vec3(0.5, 0.6, 0.9);
+        vec3 _BounceColor_0 = vec3(0.6, 0.1, 0.1);
+        vec3 _GlitterColor_0 = vec3(0.5, 0.5, 0.3);
+        vec3 _OceanColor_0 = vec3(10.0, 10.0, 5.0);
+        vec3 _DistanceColor_0 = vec3(0.3, 0.3, 0.35);
+        vec3 _SphereSpecColor_0 = vec3(3.0, 3.0, 2.0);
+
+        // Night
+        vec3 _SkyTopColor_1 = vec3(0.00, 0.00, 0.01);
+        vec3 _SkyBottomColor_1 = vec3(0.01, 0.01, 0.02);
+        vec3 _SunColor_1 = vec3(0.1, 0.2, 0.6);
+        vec3 _SkyColor_1 = vec3(0.0, 0.0, 0.1);
+        vec3 _BounceColor_1 = vec3(0.04, 0.0, 0.0);
+        vec3 _GlitterColor_1 = vec3(0.2, 0.1, 0.2);
+        vec3 _OceanColor_1 = vec3(1.9, 0.9, 0.9);
+        vec3 _DistanceColor_1 = vec3(0.03, 0.03, 0.05);
+        vec3 _SphereSpecColor_1 = vec3(0.1, 0.0, 0.0);
+
+        // Golden
+        vec3 _SkyTopColor_2 = vec3(0.78, 0.35, 0.2);
+        vec3 _SkyBottomColor_2 = vec3(0.85, 0.25, 0.2);
+        vec3 _SunColor_2 = vec3(4.0, 1.1, 0.7);
+        vec3 _SkyColor_2 = vec3(0.5, 0.1, 0.2);
+        vec3 _BounceColor_2 = vec3(0.6, 0.1, 0.1);
+        vec3 _GlitterColor_2 = vec3(0.3, 0.3, 0.5);
+        vec3 _OceanColor_2 = vec3(2.0, 2.0, 10.0);
+        vec3 _DistanceColor_2 = vec3(0.49, 0.1, 0.1);
+        vec3 _SphereSpecColor_2 = vec3(3.0, 1.0, 1.0);
+
+        vec3 _SkyTopColor = mix(_SkyTopColor_0, _SkyTopColor_1, u_tod);
+        vec3 _SkyBottomColor =  mix(_SkyBottomColor_0, _SkyBottomColor_1, u_tod);
+        vec3 _SunColor = mix(_SunColor_0, _SunColor_1, u_tod);
+        vec3 _SkyColor = mix(_SkyColor_0, _SkyColor_1, u_tod);
+        vec3 _BounceColor = mix(_BounceColor_0, _BounceColor_1, u_tod);
+        vec3 _GlitterColor = mix(_GlitterColor_0, _GlitterColor_1, u_tod);
+        vec3 _OceanColor = mix(_OceanColor_0, _OceanColor_1, u_tod);
+        vec3 _DistanceColor = mix(_DistanceColor_0, _DistanceColor_1, u_tod);
+        vec3 _SphereSpecColor = mix(_SphereSpecColor_0, _SphereSpecColor_1, u_tod);
 
         vec3 _SandColor = vec3(0.18, 0.16, 0.13);
         vec3 _SphereColor = vec3(0.2, 0.1, 0.4);
@@ -192,7 +216,7 @@
         float sdSphere( in vec3 pos, in float radius ) {
 
             float z = -2.0- (u_time - (u_mid * 1.2));
-            float y = -0.3 + ((0.6 + smoothTriangleWave(u_time * 0.1)) * 0.7);
+            float y = -0.3 + ((0.6 + (smoothTriangleWave(u_time * 0.1)) ) * 0.7);
             vec3 cen = vec3(mix(-0.3, 0.3, smoothTriangleWave(u_time * 0.015)), y, z);
                          
             return length(pos - cen) - (radius + (u_mid/ 6.));
@@ -204,6 +228,7 @@
             // Floating spheres
             float d1 = sdSphere(pos, 0.5);                            
 
+            // These guys we could wait with until we've confirm hit a ball?
             vec3 pos_2 = vec3(pos.x + (0.2 * u_mid * smoothTriangleWave(u_time * 0.5)) + smoothTriangleWave(u_time * 0.1), pos.y - (0.2* u_bass) * smoothTriangleWave(u_time * 0.4), pos.z + ( 0.8 * cos(u_time * 0.5)));
             vec3 pos_3 = vec3(pos.x - (0.1 * u_mid * smoothTriangleWave(u_time * 0.6)) - smoothTriangleWave(u_time * 0.05), pos.y + (0.3* u_bass) * smoothTriangleWave(u_time * 0.05), pos.z + ( 0.8 * cos(u_time * 0.5)));
 
@@ -259,7 +284,7 @@
 
             float t = tmin;
 
-            for (int i = 0; i < 350; i++) {
+            for (int i = 0; i < 450; i++) {
                 vec2 h = map(ro+rd*t);
                 if (abs(h.x) < 0.01) {
                     res = vec2(t, h.y);
@@ -347,7 +372,7 @@
     
             // GAUSSIAN BLUR SETTINGS {{{
             const float Directions = 16.0; // BLUR DIRECTIONS (Default 16.0 - More is better but slower)
-            const float Quality = 3.0; // BLUR QUALITY (Default 4.0 - More is better but slower)
+            const float Quality = 4.0; // BLUR QUALITY (Default 4.0 - More is better but slower)
             const float Size = 12.0; // BLUR SIZE (Radius)
             // GAUSSIAN BLUR SETTINGS }}}
 
@@ -371,6 +396,10 @@
             return Color;
         }
 
+        vec3 fresnelSchlick(vec3 N, vec3 I){
+            vec3 F0 = vec3(0.0);
+            return F0 + (1.0 - F0) * pow(1.0 - (dot(N, I)), 5.0);
+        }
 
         void main() {
             vec2 p = (2.0 * gl_FragCoord.xy - u_resolution.xy) / u_resolution.y;
@@ -463,6 +492,8 @@
                     col += (spec * glitterSpecLots * _OceanColor * sun_sha);
                 } else { // Sphere
                     col += _SphereSpecColor * spec;
+                    col += fresnelSchlick(sand_nor, -rd) * vec3(1.0, 0.5, 0.5);
+                    //col = vec3(fresnelSchlick(sand_nor, -rd));
                 }
 
                 float distance = clamp((t-15.) / 20., 0.0, 1.0);
@@ -521,7 +552,7 @@
             if (selectedTrack) {
                 audioElement.src = getStreamUrl(selectedTrack.id);
                 audioContext.resume();
-                audioElement.currentTime = 200;
+                audioElement.currentTime = 300;
                 audioElement.play();               
             }
         }
@@ -557,6 +588,8 @@
 
         console.log("BUFFER LENGTH");
         console.log(bufferLength);
+
+        let oldTime = 0;
         const update = (timestamp) => {
             analyser.getByteFrequencyData(dataArray);
             const bass = dataArray.slice(0, 4).reduce((acc, e) => acc+e) / 4;
@@ -565,7 +598,14 @@
             sandbox.setUniform("u_bass", bass / 255);
             sandbox.setUniform("u_mid", mid / 255);
             sandbox.setUniform("u_high", high / 255);
+            // sandbox.setUniform("u_tod", (Math.sin(timestamp* 0.0001) + 1) / 2);
             window.requestAnimationFrame(update);
+
+            let ms = timestamp - oldTime;
+            let fps = Math.ceil(1/(ms/1000))
+            document.getElementById("fps").innerHTML = fps;
+
+            oldTime = timestamp;
         }
 
         window.requestAnimationFrame(update);
