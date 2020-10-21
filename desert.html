@@ -101,6 +101,7 @@
         vec3 _OceanColor_0 = vec3(10.0, 10.0, 5.0);
         vec3 _DistanceColor_0 = vec3(0.3, 0.3, 0.35);
         vec3 _SphereSpecColor_0 = vec3(3.0, 3.0, 2.0);
+        vec3 _FresnelColor_0 = vec3(1.0, 0.5, 0.5);
 
         // Night
         vec3 _SkyTopColor_1 = vec3(0.00, 0.00, 0.01);
@@ -111,7 +112,8 @@
         vec3 _GlitterColor_1 = vec3(0.2, 0.1, 0.2);
         vec3 _OceanColor_1 = vec3(1.9, 0.9, 0.9);
         vec3 _DistanceColor_1 = vec3(0.03, 0.03, 0.05);
-        vec3 _SphereSpecColor_1 = vec3(0.1, 0.0, 0.0);
+        vec3 _SphereSpecColor_1 = vec3(0.5, 0.2, 0.5);
+        vec3 _FresnelColor_1 = vec3(0.15, 0.05, 0.05);
 
         // Golden
         vec3 _SkyTopColor_2 = vec3(0.78, 0.35, 0.2);
@@ -133,6 +135,7 @@
         vec3 _OceanColor = mix(_OceanColor_0, _OceanColor_1, u_tod);
         vec3 _DistanceColor = mix(_DistanceColor_0, _DistanceColor_1, u_tod);
         vec3 _SphereSpecColor = mix(_SphereSpecColor_0, _SphereSpecColor_1, u_tod);
+        vec3 _FresnelColor = mix(_FresnelColor_0, _FresnelColor_1, u_tod);
 
         vec3 _SandColor = vec3(0.18, 0.16, 0.13);
         vec3 _SphereColor = vec3(0.2, 0.1, 0.4);
@@ -423,6 +426,16 @@
             // Color
             vec3 col = mix(_SkyTopColor, _SkyBottomColor, exp(-10.0*rd.y));
 
+
+            // Stars
+            vec2 star_uv = (gl_FragCoord.xy-0.5*u_resolution.xy) / u_resolution.y;
+            star_uv = fract(star_uv * 12.) - .5;
+
+            float s_d = length(star_uv) * 8.;
+            float s = smoothstep(.15, .05, s_d);
+            float s_glow = smoothstep(2.35, .005, s_d);
+           // float s = smoothstep(0.2,  0.05, length(star_uv))
+
             // SKY
             vec2 sky_uv = (gl_FragCoord.xy-0.5*u_resolution.xy) / u_resolution.y;
             vec2 logo_uv = sky_uv * 1.8;
@@ -445,6 +458,7 @@
             col +=  (min(m, 0.9) * vec3(0.2 + (u_mid * 0.5), 0.2, 0.4));
             col += logo_color.rgb;
 
+            col += vec3(s*0.2) + (0.001 * vec3(s_glow));
             // Ray marching
             vec2 tm = castRay(ro, rd);
             if (tm.y > 0.0) {
@@ -491,9 +505,10 @@
                     col += (glitterSpec * sun_dif * _GlitterColor * sun_sha);
                     col += (spec * glitterSpecLots * _OceanColor * sun_sha);
                 } else { // Sphere
+                    vec3 fresnel = fresnelSchlick(sand_nor, -rd);
                     col += _SphereSpecColor * spec;
-                    col += fresnelSchlick(sand_nor, -rd) * vec3(1.0, 0.5, 0.5);
-                    //col = vec3(fresnelSchlick(sand_nor, -rd));
+                    col += fresnel * _FresnelColor;
+                    //col += vec3(1., 1., 1.) * 1. - 
                 }
 
                 float distance = clamp((t-15.) / 20., 0.0, 1.0);
@@ -598,7 +613,8 @@
             sandbox.setUniform("u_bass", bass / 255);
             sandbox.setUniform("u_mid", mid / 255);
             sandbox.setUniform("u_high", high / 255);
-            // sandbox.setUniform("u_tod", (Math.sin(timestamp* 0.0001) + 1) / 2);
+            sandbox.setUniform("u_tod", (Math.sin(timestamp* 0.0001) + 1) / 2);
+            // sandbox.setUniform("u_tod", 1);
             window.requestAnimationFrame(update);
 
             let ms = timestamp - oldTime;
