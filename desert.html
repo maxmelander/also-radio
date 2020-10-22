@@ -79,6 +79,7 @@
         #define DAY        
 
         precision highp float;
+        uniform vec2 u_mouse;
         uniform float u_time;
         uniform vec2 u_resolution;
         uniform float u_bass;
@@ -86,6 +87,7 @@
         uniform float u_high;
         uniform sampler2D u_texture;
         uniform float u_tod; // time of day mix from 0 -> 1
+        uniform float u_distort;
 
         vec3 _CameraPosition = vec3(0.0, 0.6, 3.0);
 
@@ -194,7 +196,7 @@
             return mix( b, a, h ) - k*h*(1.0-h);
         }
 
-        float sdPlane( in vec3 pos )
+        float sdPlane(vec3 pos)
         {
             float amp = u_bass / 3.;
 
@@ -209,14 +211,7 @@
             return d;
         }
 
-        float sdEllipsoid( in vec3 p, in vec3 r )
-        {
-            float k0 = length(p/r);
-            float k1 = length(p/(r*r));
-            return k0*(k0-1.0)/k1;
-        }
-
-        float sdSphere( in vec3 pos, in float radius ) {
+        float sdSphere(vec3 pos, float radius) {
 
             float z = -2.0- (u_time - (u_mid * 1.2));
             float y = -0.3 + ((0.6 + (smoothTriangleWave(u_time * 0.1)) ) * 0.7);
@@ -225,20 +220,31 @@
             return length(pos - cen) - (radius + (u_mid/ 6.));
         }
 
-        vec2 map(in vec3 pos) {
+        float sdMetaballs(vec3 pos) {
+             // Floating spheres
+            float result = sdSphere(pos, 0.5);                            
+
+            vec3 pos_2 = vec3(pos.x + (0.2 * u_mid * smoothTriangleWave(u_time * 0.5)) + smoothTriangleWave(u_time * 0.1), pos.y - (0.2* u_bass) * smoothTriangleWave(u_time * 0.4) -(0.3 * smoothTriangleWave(u_time * 0.033)), pos.z + ( 0.8 * cos(u_time * 0.5)));
+            vec3 pos_3 = vec3(pos.x - (0.1 * u_mid * smoothTriangleWave(u_time * 0.6)) - smoothTriangleWave(u_time * 0.05), pos.y + (0.3* u_bass) * smoothTriangleWave(u_time * 0.05) - (0.5 * smoothTriangleWave(u_time * 0.08)), pos.z + ( 0.8 * cos(u_time * 0.5)));
+
+            float ball_2 = sdSphere(pos_2, 0.4);
+            float ball_3 = sdSphere(pos_3, 0.3);
+
+            result = smin(result, ball_2, 0.5);
+            result = smin(result, ball_3, 0.5);           
+
+            return result;
+        }
+
+        vec2 map(vec3 pos) {
             float d = -1.0;
 
-            // Floating spheres
-            float d1 = sdSphere(pos, 0.5);                            
+            // Metaballs
+            vec3 ball_pos = pos;
+            ball_pos.x = mod(abs(ball_pos.x), 5.0) - 1.5;
+            ball_pos.z += 0.3 * (sin(abs(ball_pos.z) * 1.0) - 0.5);
 
-            // These guys we could wait with until we've confirm hit a ball?
-            vec3 pos_2 = vec3(pos.x + (0.2 * u_mid * smoothTriangleWave(u_time * 0.5)) + smoothTriangleWave(u_time * 0.1), pos.y - (0.2* u_bass) * smoothTriangleWave(u_time * 0.4), pos.z + ( 0.8 * cos(u_time * 0.5)));
-            vec3 pos_3 = vec3(pos.x - (0.1 * u_mid * smoothTriangleWave(u_time * 0.6)) - smoothTriangleWave(u_time * 0.05), pos.y + (0.3* u_bass) * smoothTriangleWave(u_time * 0.05), pos.z + ( 0.8 * cos(u_time * 0.5)));
-
-            float f3 = sdSphere(pos_2, 0.4);
-            float f4 = sdSphere(pos_3, 0.3);
-            d1 = smin(d1, f3, 0.5);
-            d1 = smin(d1, f4, 0.5);
+            float d1 = sdMetaballs(mix(pos, ball_pos, u_distort));
                                                                      
             // Ground
             float d2 = sdPlane(pos);
@@ -254,7 +260,7 @@
         }
 
         
-        float calcOcclusion( in vec3 pos, in vec3 nor )
+        float calcOcclusion(vec3 pos, vec3 nor)
         {
             float occ = 0.0;
             float sca = 1.0;
@@ -269,18 +275,18 @@
             return clamp( 1.0 - 2.0*occ, 0.0, 1.0 );
         }
 
-        vec3 calcNormal(in vec3 pos) {
+        vec3 calcNormal(vec3 pos) {
             vec2 e = vec2(0.0001, 0.0);
             return normalize( vec3( map(pos+e.xyy).x-map(pos-e.xyy).x,
                                     map(pos+e.yxy).x-map(pos-e.yxy).x,
                                     map(pos+e.yyx).x-map(pos-e.yyx).x));
         }
 
-        vec2 textureMapping(in vec3 pos) {
+        vec2 textureMapping(vec3 pos) {
             return pos.xz*vec2(0.03,0.07);
         }
 
-        vec2 castRay(in vec3 ro, vec3 rd) {
+        vec2 castRay(vec3 ro, vec3 rd) {
             vec2 res = vec2(-1.0, -1.0);
             float tmin = 0.5;
             float tmax = 30.0;
@@ -304,7 +310,7 @@
             return res;
         }
 
-        float castShadow(in vec3 ro, vec3 rd) {
+        float castShadow(vec3 ro, vec3 rd) {
             float res = 1.0;
 
             float t = 0.001;
@@ -407,10 +413,11 @@
         void main() {
             vec2 p = (2.0 * gl_FragCoord.xy - u_resolution.xy) / u_resolution.y;
 
-            // Camera target
-            vec3 ta = _CameraPosition - vec3(0., 0.5, 800.);
 
             _CameraPosition.z -= u_time;
+
+            // Camera target
+            vec3 ta = _CameraPosition - vec3(0., 0.5, 800.);
             // Ray origin
             vec3 ro = _CameraPosition;
 
@@ -425,7 +432,6 @@
 
             // Color
             vec3 col = mix(_SkyTopColor, _SkyBottomColor, exp(-10.0*rd.y));
-
 
             // STARS
             vec2 star_uv = (gl_FragCoord.xy-0.5*u_resolution.xy) / u_resolution.y;
@@ -444,16 +450,15 @@
             vec2 logo_uv = sky_uv * 1.8;
             logo_uv.x += 0.5;
             logo_uv.y += 0.36;
-            //sky_uv = (sky_uv + 1.0) / 2.;
 
             // Animation: soon/moon
             float sun_pos_wave = (smoothTriangleWave(u_time * 0.1) * 2.) - 1.;
             sky_uv.x += 0.02 - (0.1 * sun_pos_wave);
 
-            vec4 logo_hue = vec4(1.2, 1.0, 1.0, 2.0);
+            vec4 logo_hue = vec4(1.2, 1.0, 1.0, 1.0);
             vec4 logo_blur = clamp(blur(u_texture, logo_uv), 0., 1.);
             vec4 logo = clamp(texture2D(u_texture, logo_uv), 0., 1.);
-            vec4 logo_color = clamp(logo * (0.2 + u_bass) + (logo_blur * (u_bass * 0.4)), 0.0 , 1.0) * logo_hue;
+            vec4 logo_color = clamp(logo * (0.1 + u_bass) + (logo_blur * (u_bass * 0.4)), 0.0 , 1.0) * logo_hue;
 
             float d = length(sky_uv);
             float m = .01 / d;//smoothstep(.2, .05, d);
@@ -519,6 +524,11 @@
 
             col = pow( col, vec3(0.4545) );
 
+            if (u_distort == 1.) {
+                //col.g = mix(col.g, 0.1 - col.g, u_bass * 0.5);
+                //col.r = mix(col.g, 0.9 - col.r, 0.);
+            }
+
             gl_FragColor = vec4(col, 1.0); // return reddish-purple
         }
     </script>
@@ -569,7 +579,7 @@
             if (selectedTrack) {
                 audioElement.src = getStreamUrl(selectedTrack.id);
                 audioContext.resume();
-                audioElement.currentTime = 315;
+                audioElement.currentTime = 0;
                 audioElement.play();               
             }
         }
@@ -617,9 +627,10 @@
             sandbox.setUniform("u_bass", bass / 255);
             sandbox.setUniform("u_mid", mid / 255);
             sandbox.setUniform("u_high", high / 255);
-            sandbox.setUniform("u_tod", ((Math.sin(timestamp * 0.0004) + 1) / 2));
+            sandbox.setUniform("u_distort", timestamp % 10000 > 5000 ? 1 : 0);
+            //sandbox.setUniform("u_tod", ((Math.sin(timestamp * 0.0004) + 1) / 2));
             if (audioElement.currentTime && audioElement.duration) {
-                // sandbox.setUniform("u_tod", 1 - (audioElement.currentTime / audioElement.duration));
+                sandbox.setUniform("u_tod", 1 - (audioElement.currentTime / audioElement.duration));
             }
             window.requestAnimationFrame(update);
 
