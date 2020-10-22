@@ -627,7 +627,7 @@
             sandbox.setUniform("u_bass", bass / 255);
             sandbox.setUniform("u_mid", mid / 255);
             sandbox.setUniform("u_high", high / 255);
-            sandbox.setUniform("u_distort", timestamp % 10000 > 5000 ? 1 : 0);
+            sandbox.setUniform("u_distort", audioElement.currentTime % 20 > 15 ? 1 : 0);
             //sandbox.setUniform("u_tod", ((Math.sin(timestamp * 0.0004) + 1) / 2));
             if (audioElement.currentTime && audioElement.duration) {
                 sandbox.setUniform("u_tod", 1 - (audioElement.currentTime / audioElement.duration));
