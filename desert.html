@@ -199,7 +199,7 @@
             float amp = u_bass / 3.;
 
             float fh = -1.0 + (0.6 + amp) * (sharpTriangleWave(-0.2 + (0.1*pos.x) + 0.17*smoothTriangleWave(pos.x*0.1) + 0.3*smoothTriangleWave(pos.x*0.02)) + smoothTriangleWave(0.06*pos.z + 0.01*smoothTriangleWave(pos.z*0.2)));
-            fh += pow(fh, 1.7);
+            fh += pow(abs(fh), 1.7);
 
             float hf = smoothTriangleWave(3.6*(pos.z + 0.02*smoothTriangleWave((pos.x + (u_time * 0.8)) * 2.6))); //+ smoothTriangleWave(20.*pos.y);
             float hf2 = smoothTriangleWave(2.*pos.x + (u_time * 1.));
@@ -427,14 +427,17 @@
             vec3 col = mix(_SkyTopColor, _SkyBottomColor, exp(-10.0*rd.y));
 
 
-            // Stars
+            // STARS
             vec2 star_uv = (gl_FragCoord.xy-0.5*u_resolution.xy) / u_resolution.y;
-            star_uv = fract(star_uv * 12.) - .5;
+            star_uv *= 12.;
+            vec2 star_gv = fract(star_uv) - .5;
+            vec2 star_id = floor(star_uv);
 
-            float s_d = length(star_uv) * 8.;
-            float s = smoothstep(.15, .05, s_d);
-            float s_glow = smoothstep(2.35, .005, s_d);
-           // float s = smoothstep(0.2,  0.05, length(star_uv))
+            float star_noise = snoise(star_id);
+            float star_distance = length(vec2(star_gv.x + ((star_noise - .5) * 0.8), star_gv.y + (fract(star_noise * 94.281)-.5) * 0.8)) * 8.;
+            float star_strength = smoothstep(.15, .05, star_distance);
+            float star_glow = smoothstep(2.35, .005, star_distance);
+            col += vec3(star_strength*((star_noise * .4) + (u_mid * 0.9))) + (0.001 * vec3(star_glow)) * vec3(star_noise);
 
             // SKY
             vec2 sky_uv = (gl_FragCoord.xy-0.5*u_resolution.xy) / u_resolution.y;
@@ -458,8 +461,7 @@
             col +=  (min(m, 0.9) * vec3(0.2 + (u_mid * 0.5), 0.2, 0.4));
             col += logo_color.rgb;
 
-            col += vec3(s*0.2) + (0.001 * vec3(s_glow));
-            // Ray marching
+
             vec2 tm = castRay(ro, rd);
             if (tm.y > 0.0) {
                 float t = tm.x;
@@ -567,7 +569,7 @@
             if (selectedTrack) {
                 audioElement.src = getStreamUrl(selectedTrack.id);
                 audioContext.resume();
-                audioElement.currentTime = 300;
+                audioElement.currentTime = 315;
                 audioElement.play();               
             }
         }
@@ -605,6 +607,8 @@
         console.log(bufferLength);
 
         let oldTime = 0;
+
+        sandbox.setUniform("u_tod", 1);
         const update = (timestamp) => {
             analyser.getByteFrequencyData(dataArray);
             const bass = dataArray.slice(0, 4).reduce((acc, e) => acc+e) / 4;
@@ -613,8 +617,10 @@
             sandbox.setUniform("u_bass", bass / 255);
             sandbox.setUniform("u_mid", mid / 255);
             sandbox.setUniform("u_high", high / 255);
-            sandbox.setUniform("u_tod", (Math.sin(timestamp* 0.0001) + 1) / 2);
-            // sandbox.setUniform("u_tod", 1);
+            sandbox.setUniform("u_tod", ((Math.sin(timestamp * 0.0004) + 1) / 2));
+            if (audioElement.currentTime && audioElement.duration) {
+                // sandbox.setUniform("u_tod", 1 - (audioElement.currentTime / audioElement.duration));
+            }
             window.requestAnimationFrame(update);
 
             let ms = timestamp - oldTime;
