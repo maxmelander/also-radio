@@ -82,12 +82,15 @@
         uniform vec2 u_mouse;
         uniform float u_time;
         uniform vec2 u_resolution;
+        uniform sampler2D u_texture;
+
         uniform float u_bass;
         uniform float u_mid;
         uniform float u_high;
-        uniform sampler2D u_texture;
+
         uniform float u_tod; // time of day mix from 0 -> 1
-        uniform float u_distort;
+        uniform float u_distort; // mix in field distortion effect
+        uniform float u_ballSpeed;
 
         vec3 _CameraPosition = vec3(0.0, 0.6, 3.0);
 
@@ -203,10 +206,10 @@
             float fh = -1.0 + (0.6 + amp) * (sharpTriangleWave(-0.2 + (0.1*pos.x) + 0.17*smoothTriangleWave(pos.x*0.1) + 0.3*smoothTriangleWave(pos.x*0.02)) + smoothTriangleWave(0.06*pos.z + 0.01*smoothTriangleWave(pos.z*0.2)));
             fh += pow(abs(fh), 1.7);
 
-            float hf = smoothTriangleWave(3.6*(pos.z + 0.02*smoothTriangleWave((pos.x + (u_time * 0.8)) * 2.6))); //+ smoothTriangleWave(20.*pos.y);
+            float hf = smoothTriangleWave(3.6*(pos.z + 0.02*smoothTriangleWave((pos.x + (u_time * 0.9)) * 2.6))); //+ smoothTriangleWave(20.*pos.y);
             float hf2 = smoothTriangleWave(2.*pos.x + (u_time * 1.));
 
-            float d = pos.y - (fh + ((0.138*(u_high*2.0))* hf * (clamp(-pos.y + 0.2, 0., 1.))) + (0.0026 * hf2 * (pos.y)));
+            float d = pos.y - (fh + ((0.138*(u_high*2.4))* hf * (clamp(-pos.y + 0.2, 0., 1.))) + (0.0026 * hf2 * (pos.y)));
 
             return d;
         }
@@ -224,8 +227,8 @@
              // Floating spheres
             float result = sdSphere(pos, 0.5);                            
 
-            vec3 pos_2 = vec3(pos.x + (0.2 * u_mid * smoothTriangleWave(u_time * 0.5)) + smoothTriangleWave(u_time * 0.1), pos.y - (0.2* u_bass) * smoothTriangleWave(u_time * 0.4) -(0.3 * smoothTriangleWave(u_time * 0.033)), pos.z + ( 0.8 * cos(u_time * 0.5)));
-            vec3 pos_3 = vec3(pos.x - (0.1 * u_mid * smoothTriangleWave(u_time * 0.6)) - smoothTriangleWave(u_time * 0.05), pos.y + (0.3* u_bass) * smoothTriangleWave(u_time * 0.05) - (0.5 * smoothTriangleWave(u_time * 0.08)), pos.z + ( 0.8 * cos(u_time * 0.5)));
+            vec3 pos_2 = vec3(pos.x + (0.2 * u_mid * smoothTriangleWave(u_time * 0.5)) + smoothTriangleWave(u_time * (0.1 * u_ballSpeed)), pos.y - (0.2* u_bass) * smoothTriangleWave(u_time * 0.4) -(0.3 * smoothTriangleWave(u_time * (0.033 * u_ballSpeed))), pos.z + ( 0.8 * cos(u_time * (0.5 * u_ballSpeed))));
+            vec3 pos_3 = vec3(pos.x - (0.1 * u_mid * smoothTriangleWave(u_time * 0.6)) - smoothTriangleWave(u_time * (0.05 * u_ballSpeed)), pos.y + (0.3* u_bass) * smoothTriangleWave(u_time * 0.05) - (0.5 * smoothTriangleWave(u_time * (0.08 * u_ballSpeed))), pos.z + ( 0.8 * cos(u_time * (0.5 * u_ballSpeed))));
 
             float ball_2 = sdSphere(pos_2, 0.4);
             float ball_3 = sdSphere(pos_3, 0.3);
@@ -458,12 +461,12 @@
             vec4 logo_hue = vec4(1.2, 1.0, 1.0, 1.0);
             vec4 logo_blur = clamp(blur(u_texture, logo_uv), 0., 1.);
             vec4 logo = clamp(texture2D(u_texture, logo_uv), 0., 1.);
-            vec4 logo_color = clamp(logo * (0.1 + u_bass) + (logo_blur * (u_bass * 0.4)), 0.0 , 1.0) * logo_hue;
+            vec4 logo_color = clamp(logo * (0.05 + u_bass) + (logo_blur * (u_bass * 0.4)), 0.0 , 1.0) * logo_hue;
 
             float d = length(sky_uv);
             float m = .01 / d;//smoothstep(.2, .05, d);
 
-            col +=  (min(m, 0.9) * vec3(0.2 + (u_mid * 0.5), 0.2, 0.4));
+            col +=  (min(m, 0.9) * vec3(0.2 + (u_mid * 0.6), 0.2, 0.4));
             col += logo_color.rgb;
 
 
@@ -507,7 +510,7 @@
                 // Material color
                 col = li * mate;
                 if (tm.y < 1.5) { // Sand
-                    _GlitterColor = vec3(_GlitterColor.r + (u_mid * 0.4), _GlitterColor.g, _GlitterColor.b + (u_mid * 0.1));
+                    _GlitterColor = vec3(_GlitterColor.r + (u_mid * 0.8), _GlitterColor.g, _GlitterColor.b + (u_mid * 0.3));
                     _OceanColor = vec3(_OceanColor.r + (u_mid * 0.4), _OceanColor.g, _OceanColor.b + (u_mid * 0.1));
                     col += (glitterSpec * sun_dif * _GlitterColor * sun_sha);
                     col += (spec * glitterSpecLots * _OceanColor * sun_sha);
@@ -525,7 +528,7 @@
             col = pow( col, vec3(0.4545) );
 
             if (u_distort == 1.) {
-                //col.g = mix(col.g, 0.1 - col.g, u_bass * 0.5);
+                // col.g = mix(col.g, 0.1 - col.g, u_bass * 0.5);
                 //col.r = mix(col.g, 0.9 - col.r, 0.);
             }
 
@@ -533,6 +536,14 @@
         }
     </script>
     <script type="text/javascript">
+        // Canvas setup
+        const fs = document.getElementById("FSHADER_SOURCE").textContent;
+        const canvas = document.querySelector("#canvas");
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        const sandbox = new GlslCanvas(canvas);
+        sandbox.load(fs);
+
         let tracks = [];
 
         const infoUrl = "https://api.soundcloud.com/users/287905929/tracks?client_id=9e05e349251475056d1bc81acbf08c71&secret_token=track";
@@ -575,12 +586,23 @@
         const audioElement = document.querySelector('audio');                                                                       
         const audioSource = audioContext.createMediaElementSource(audioElement);
 
+        // Animation variables
+        let isPlaying = false;
+        let isDistorting = false;
+
+        let ballSpeed = 0.2;
+        const ballAcceleration = 0.01;
+        const ballSpeedNormal = 0.8;
+        const ballSpeedFast = 2.2;
+
         const play = () => {
             if (selectedTrack) {
                 audioElement.src = getStreamUrl(selectedTrack.id);
                 audioContext.resume();
-                audioElement.currentTime = 0;
+                audioElement.currentTime = 180;
                 audioElement.play();               
+
+                isPlaying = true;
             }
         }
 
@@ -602,16 +624,11 @@
         var bufferLength = analyser.frequencyBinCount;
         var dataArray = new Uint8Array(bufferLength);
                                               
-        // Canvas setup
-        const fs = document.getElementById("FSHADER_SOURCE").textContent;
-        const canvas = document.querySelector("#canvas");
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        const sandbox = new GlslCanvas(canvas);
-        sandbox.load(fs);
+
 
         // Uniforms
         sandbox.setUniform("u_texture","logo.jpg");
+        sandbox.setUniform("u_ballSpeed", ballSpeed);
 
         console.log("BUFFER LENGTH");
         console.log(bufferLength);
@@ -628,10 +645,33 @@
             sandbox.setUniform("u_mid", mid / 255);
             sandbox.setUniform("u_high", high / 255);
             sandbox.setUniform("u_distort", audioElement.currentTime % 20 > 15 ? 1 : 0);
-            //sandbox.setUniform("u_tod", ((Math.sin(timestamp * 0.0004) + 1) / 2));
             if (audioElement.currentTime && audioElement.duration) {
                 sandbox.setUniform("u_tod", 1 - (audioElement.currentTime / audioElement.duration));
             }
+
+            // Start animation
+            if (isPlaying && ballSpeed < ballSpeedNormal) {
+                console.log("ey");
+                ballSpeed += ballAcceleration;
+                if (ballSpeed > ballSpeedNormal) {
+                    ballSpeed = ballSpeedNormal;
+                }
+            }
+
+            if (isPlaying && !isDistorting && ballSpeed > ballSpeedNormal) {
+                ballSpeed = ballSpeedNormal;
+            }
+
+            // Distortion animation
+            if (audioElement.currentTime % 20 > 13) {
+                ballSpeed = ballSpeedFast;
+                isDistorting = true;
+                sandbox.setUniform("u_distort", 1);
+            } else {
+                isDistorting = false;
+            }
+
+            sandbox.setUniform("u_ballSpeed", ballSpeed);
             window.requestAnimationFrame(update);
 
             let ms = timestamp - oldTime;
