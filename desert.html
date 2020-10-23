@@ -39,16 +39,14 @@
             z-index: 0;
           }
 
-          #tracklist {
+          #sc-logo {
               position: absolute;
-              bottom: 12px;    
-              right: 12px;  
+              top: 120px;
+              left: 12vw;
+              z-index: 2;
+              width: 70px;
           }
 
-          .track--selected p {
-              background: white;
-              color: black;
-          }
 
           button {
               z-index: 9999;
@@ -72,7 +70,7 @@
           #player {
               position: absolute;
               width: 80vw;
-              bottom: 130px;                  
+              bottom: 100px;                  
               left: 50%;
               transform: translateX(-50%);
               z-index: 2;                     
@@ -84,27 +82,58 @@
           }
 
           #player-button {
-              width: 80px;
-              height: 80px;                   
+              width: 90px;
+              height: 90px;                   
               -webkit-appearance: button;
               border: none;
               background: none;               
               color: white;                   
-              margin-bottom: 32px;
+              margin-bottom: 4px;
+
+              position: relative;
           }                                   
 
           #player-button svg path {
               fill: white;       
           }
 
-          #player-button #pause {
+          #player-button #play, #player-button #pause {
+              position: absolute;
+              top: 0;
+              left: 0;             
+              transition: opacity .5s ease;
           }
 
-          #player-button #play {
-          }                                                   
+          #player-button:hover #play, #player-button:hover #pause {
+              opacity: 0;
+          }
+
+          #player-button #play--hover, #player-button #pause--hover {
+              opacity: 0;
+
+              position: absolute;
+              top: 0;
+              left: 0;
+
+              transition: opacity .5s ease;
+          }
+
+          #player-button:hover #play--hover, #player-button:hover #pause--hover {
+              opacity: 1;
+          }
 
           .player-button--play #play {
-              display: none;
+              display: none !important;
+          }
+          .player-button--play #play--hover {
+              display: none !important;
+          }
+
+          .player-button--pause #pause {
+              display: none !important;
+          }
+          .player-button--pause #pause--hover {
+              display: none !important;
           }
 
           .player-button--play #pause {                       
@@ -130,7 +159,7 @@
 
           #player-timeline{
               width: 100%;
-              height: 1px;                    
+              height: 0.5px;                    
               background-color: white;                   
           }
 
@@ -154,67 +183,114 @@
           .player-timecode {
               color: white;                                                  
               font-family: "helvetica";
+              font-weight: lighter;
           }
 
           #player-title-wrapper {
               width: 100%;
               display: flex;
               justify-content: space-between;                          
-              margin-top: 32px;                                                                                                                                                    
+              align-items: center;
+              margin-top: 8px;    
+
           }
 
           .player-change {                                             
               background: none;                                        
-              margin: 0;                                               
+              margin: 0 -12px 0 -12px;                                               
               padding: 0;
-              width: 20px; 
-              height: 20px;                                                                                                                                                        
+              width: 40px; 
+              height: 40px;
               border: none;
 
           }
 
           #player-previous #arrow {
+              transform: rotate(180deg);
+          }
+
+          #player-info {
+              width: 60px;
+              height: 40px;
+              background: none;
+              border: none;
+              color: white;
+              font-size: 13px;    
+          }
+
+          #player-info #arrow{
               transform: rotate(90deg);
           }
-
-          #player-next #arrow {
-              transform: rotate(-90deg);
-          }
-
           #arrow {
               color: white;
               width: 100%;
               height: 100%;
           }
 
-
           #player-title {
               color: white;
-              font-size: 24px;
+              font-size: 20px;
               font-family: "helvetica";
                          
+          }
+
+
+          #player-description {
+              margin-top: 6px;          
+              margin-bottom: 24px;
+              width: 80%;                
+              font-family: "helvetica";
+              font-weight: lighter;      
+              color: white;
+              font-size: 13px;
+              line-height: 1.6;          
+              position: relative;
+              opacity: 1;
+              user-select: none;  
+              transition: opacity 1s ease;
+          }
+
+          .player-description--hidden {
+              position: absolute !important;
+              opacity: 0 !important;                                  
+              transition: opacity 0s !important;
           }
     </style>
 </head>
 <body>
     <canvas id="canvas"></canvas>
+    <a href="https://www.soundcloud.com/alsoradio" target="_blank">
+    <img src="sc.png" id="sc-logo"></img>
+    </a>
     <div id="player">
         <button id="player-button" class="player-button--pause">
-<svg version="1.1" id="play" x="0px" y="0px" viewBox="0 0 512 512">
-  <path stroke="black" stroke-width="7" fill="white"
-  d="M256,0C114.833,0,0,114.844,0,256s114.833,256,256,256s256-114.844,256-256S397.167,0,256,0z M256,490.667 C126.604,490.667,21.333,385.396,21.333,256S126.604,21.333,256,21.333S490.667,126.604,490.667,256S385.396,490.667,256,490.667 z" />
-  <path stroke="black" stroke-width="7" fill="white"
-  d="M357.771,247.031l-149.333-96c-3.271-2.135-7.5-2.25-10.875-0.396C194.125,152.51,192,156.094,192,160v192 c0,3.906,2.125,7.49,5.563,9.365c1.583,0.865,3.354,1.302,5.104,1.302c2,0,4.021-0.563,5.771-1.698l149.333-96 c3.042-1.958,4.896-5.344,4.896-8.969S360.813,248.99,357.771,247.031z M213.333,332.458V179.542L332.271,256L213.333,332.458z" />
+<svg version="1.1" id="play" xmlns="http://www.w3.org/2000/svg"
+xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+viewBox="0 0 200 200" xml:space="preserve">
+<path class="st0"
+d="M100,174.98c-41.43,0-75.14-33.63-75.14-74.98c0-41.34,33.71-74.98,75.14-74.98s75.14,33.63,75.14,74.98 C175.14,141.34,141.43,174.98,100,174.98z M100,27.02c-40.33,0-73.14,32.74-73.14,72.98s32.81,72.98,73.14,72.98 c40.33,0,73.14-32.74,73.14-72.98S140.33,27.02,100,27.02z M79.88,130.66V69.34L133.11,100L79.88,130.66z M81.88,72.8v54.41 L129.1,100L81.88,72.8z" />
 </svg>
 
-<svg version="1.1" id="pause" x="0px" y="0px"
-viewBox="0 0 512 512">
-  <path stroke="black" stroke-width="7" fill="white"
-  d="M256,0C114.833,0,0,114.844,0,256s114.833,256,256,256s256-114.844,256-256S397.167,0,256,0z M256,490.667 C126.604,490.667,21.333,385.396,21.333,256S126.604,21.333,256,21.333S490.667,126.604,490.667,256S385.396,490.667,256,490.667 z" />
-  <path stroke="black" stroke-width="7" fill="white"
-  d="M224,149.333h-64c-5.896,0-10.667,4.771-10.667,10.667v192c0,5.896,4.771,10.667,10.667,10.667h64 c5.896,0,10.667-4.771,10.667-10.667V160C234.667,154.104,229.896,149.333,224,149.333z M213.333,341.333h-42.667V170.667h42.667 V341.333z" />
-  <path stroke="black" stroke-width="7" fill="white"
-  d="M352,149.333h-64c-5.896,0-10.667,4.771-10.667,10.667v192c0,5.896,4.771,10.667,10.667,10.667h64 c5.896,0,10.667-4.771,10.667-10.667V160C362.667,154.104,357.896,149.333,352,149.333z M341.333,341.333h-42.667V170.667h42.667 V341.333z" />
+<svg version="1.1" id="play--hover" xmlns="http://www.w3.org/2000/svg"
+xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+viewBox="0 0 200 200" xml:space="preserve">
+<path class="st0"
+d="M100,26.35c-40.77,0-73.81,32.97-73.81,73.65s33.05,73.65,73.81,73.65s73.81-32.97,73.81-73.65 S140.77,26.35,100,26.35z M80.96,128.81V71.19l50,28.81L80.96,128.81z" />
+</svg>
+
+<svg version="1.1" id="pause" xmlns="http://www.w3.org/2000/svg"
+xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+viewBox="0 0 200 200" xml:space="preserve">
+
+<path class="st0"
+d="M100,174.97c-41.46,0-75.19-33.63-75.19-74.97c0-41.34,33.73-74.97,75.19-74.97s75.19,33.63,75.19,74.97 C175.19,141.34,141.46,174.97,100,174.97z M100,27.03c-40.36,0-73.19,32.73-73.19,72.97c0,40.24,32.83,72.97,73.19,72.97 s73.19-32.73,73.19-72.97C173.19,59.77,140.36,27.03,100,27.03z M134.23,139.89h-25.12V60.11h25.12V139.89z M111.11,137.89h21.12 V62.11h-21.12V137.89z M90.89,139.89H65.77V60.11h25.12V139.89z M67.77,137.89h21.12V62.11H67.77V137.89z" />
+</svg>
+
+<svg version="1.1" id="pause--hover" xmlns="http://www.w3.org/2000/svg"
+xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+viewBox="0 0 200 200" xml:space="preserve">
+<path class="st0"
+d="M100,26.03c-40.98,0-74.19,33.12-74.19,73.97s33.22,73.97,74.19,73.97s74.19-33.12,74.19-73.97 S140.98,26.03,100,26.03z M89.89,138.89H66.77V61.11h23.11V138.89z M133.23,138.89h-23.11V61.11h23.11V138.89z" />
 </svg>
         </button>
         <div id="player-info-wrapper">
@@ -228,14 +304,28 @@ viewBox="0 0 512 512">
             </div>
             <div id="player-title-wrapper">
                 <button id="player-previous" class="player-change">
-                    <svg id="arrow" height="512" viewBox="0 0 546.551 546.551" width="512" xmlns="http://www.w3.org/2000/svg"><path fill="white" d="m273.283 512.39c-6.105 0-11.743-3.253-14.796-8.54l-256.198-444.068c-3.053-5.288-3.053-11.793 0-17.081s8.691-8.54 14.796-8.54h512.38c6.105 0 11.743 3.253 14.796 8.54 3.052 5.288 3.052 11.793 0 17.081l-256.181 444.068c-3.053 5.288-8.691 8.54-14.797 8.54zm-226.623-444.068 226.624 392.809 226.606-392.809z"/></svg>
+<svg version="1.1" id="arrow" xmlns="http://www.w3.org/2000/svg"
+xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+viewBox="0 0 86.24 86.24" xml:space="preserve">
+
+<path fill="white" class="st0"
+d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
+</svg>
                 </button>
                 <div id="player-title"></div>
                 <button id="player-next" class="player-change">
-                    <svg id="arrow" height="512" viewBox="0 0 546.551 546.551" width="512" xmlns="http://www.w3.org/2000/svg"><path fill="white" d="m273.283 512.39c-6.105 0-11.743-3.253-14.796-8.54l-256.198-444.068c-3.053-5.288-3.053-11.793 0-17.081s8.691-8.54 14.796-8.54h512.38c6.105 0 11.743 3.253 14.796 8.54 3.052 5.288 3.052 11.793 0 17.081l-256.181 444.068c-3.053 5.288-8.691 8.54-14.797 8.54zm-226.623-444.068 226.624 392.809 226.606-392.809z"/></svg>
+<svg version="1.1" id="arrow" xmlns="http://www.w3.org/2000/svg"
+xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+viewBox="0 0 86.24 86.24" xml:space="preserve">
+
+<path fill="white" class="st0"
+d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
+</svg>
                 </button>
             </div>
         </div>
+        <button id="player-info">˅ info</button>
+        <div id="player-description" class="player-description--hidden"></div>
     </div>
     <audio crossOrigin="anonymous" src= type="audio/mpeg">
     </audio>
@@ -714,9 +804,10 @@ viewBox="0 0 512 512">
         const updateUIInfo = () => {
             const track = tracks[selectedTrack];
                                        
-            const titleElement = document.getElementById("player-title").innerHTML = tracks[selectedTrack].title;
+            document.getElementById("player-title").innerHTML = tracks[selectedTrack].title;
+            document.getElementById("player-timecode--right").innerHTML = getFormattedNumber(tracks[selectedTrack].duration);
+            document.getElementById("player-description").innerHTML = tracks[selectedTrack].description;
 
-            const timecodeElement = document.getElementById("player-timecode--right").innerHTML = getFormattedNumber(tracks[selectedTrack].duration);
         }
 
         const updatePlayerButton = () => {
@@ -841,6 +932,22 @@ viewBox="0 0 512 512">
             updateUIInfo();
         }
 
+      let showingInfo = false;
+      const handleInfoClick = () => {
+          const descriptionElement = document.getElementById("player-description");
+          const buttonElement = document.getElementById("player-info");
+          if (showingInfo) {
+              descriptionElement.classList.add("player-description--hidden")
+              buttonElement.innerHTML = "˅ info"
+              showingInfo = false;
+          } else {
+              descriptionElement.classList.remove("player-description--hidden")
+              buttonElement.innerHTML = "˄ info"
+              showingInfo = true; 
+          }
+      }
+
+      // ON CLICKS
         document.getElementById("player-button").onclick = () => {
             if (isStopped) {
                 play()
@@ -850,6 +957,7 @@ viewBox="0 0 512 512">
         };
         document.getElementById("player-next").onclick = handleNextTrackClick;
         document.getElementById("player-previous").onclick = handlePreviousTrackClick;
+        document.getElementById("player-info").onclick = handleInfoClick;
 
         audioSource.connect(analyser);      
         analyser.connect(audioContext.destination);       
@@ -912,7 +1020,11 @@ viewBox="0 0 512 512">
 
 
             // Update HTML
-            const timecodeElement = document.getElementById("player-timecode--left").innerHTML = getFormattedNumber(audioElement.currentTime);
+            document.getElementById("player-timecode--left").innerHTML = getFormattedNumber(audioElement.currentTime);
+            const percentage = (audioElement.currentTime / audioElement.duration) * 100;
+            document.getElementById("player-timeline-playhead").style.left = `${percentage}%`;
+
+
         }
 
         window.requestAnimationFrame(update);
