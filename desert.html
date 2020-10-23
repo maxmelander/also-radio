@@ -54,6 +54,10 @@
               z-index: 9999;
           }
 
+          button:hover {
+              cursor: pointer;
+          }
+
           h1 {
               color: white;
               font-size: 69px;
@@ -64,12 +68,175 @@
           p {
               color: white; 
           }
+
+          #player {
+              position: absolute;
+              width: 80vw;
+              bottom: 130px;                  
+              left: 50%;
+              transform: translateX(-50%);
+              z-index: 2;                     
+
+              display: flex;
+              flex-direction: column;         
+              justify-content: center;        
+              align-items: center;            
+          }
+
+          #player-button {
+              width: 80px;
+              height: 80px;                   
+              -webkit-appearance: button;
+              border: none;
+              background: none;               
+              color: white;                   
+              margin-bottom: 32px;
+          }                                   
+
+          #player-button svg path {
+              fill: white;       
+          }
+
+          #player-button #pause {
+          }
+
+          #player-button #play {
+          }                                                   
+
+          .player-button--play #play {
+              display: none;
+          }
+
+          .player-button--play #pause {                       
+              display: inherit;
+          }
+
+          .player-button--pause #play {
+              display: inherit;
+          }
+
+          .player-button--pause #pause {
+              display: none;                                 
+          }
+
+          #player-info-wrapper{
+              width: 80%;                     
+          }
+
+          #player-timeline-wrapper{
+              width: 100%;                    
+              position: relative;                                            
+          }
+
+          #player-timeline{
+              width: 100%;
+              height: 1px;                    
+              background-color: white;                   
+          }
+
+          #player-timeline-playhead {
+              width: 10px;
+              height: 10px;
+              background-color: white;
+              border-radius: 50%;             
+              position: absolute;
+              left: 0%;                      
+              bottom: -5px;                       
+          }
+
+          #player-timecode-wrapper {
+              margin-top: 8px;
+              width: 100%;                                                   
+              display: flex;                                                 
+              justify-content: space-between;                                        
+          }
+
+          .player-timecode {
+              color: white;                                                  
+              font-family: "helvetica";
+          }
+
+          #player-title-wrapper {
+              width: 100%;
+              display: flex;
+              justify-content: space-between;                          
+              margin-top: 32px;                                                                                                                                                    
+          }
+
+          .player-change {                                             
+              background: none;                                        
+              margin: 0;                                               
+              padding: 0;
+              width: 20px; 
+              height: 20px;                                                                                                                                                        
+              border: none;
+
+          }
+
+          #player-previous #arrow {
+              transform: rotate(90deg);
+          }
+
+          #player-next #arrow {
+              transform: rotate(-90deg);
+          }
+
+          #arrow {
+              color: white;
+              width: 100%;
+              height: 100%;
+          }
+
+
+          #player-title {
+              color: white;
+              font-size: 24px;
+              font-family: "helvetica";
+                         
+          }
     </style>
 </head>
 <body>
     <canvas id="canvas"></canvas>
-    <h1 id="fps"></h1>
-    <div id="tracklist"></div>
+    <div id="player">
+        <button id="player-button" class="player-button--pause">
+<svg version="1.1" id="play" x="0px" y="0px" viewBox="0 0 512 512">
+  <path stroke="black" stroke-width="7" fill="white"
+  d="M256,0C114.833,0,0,114.844,0,256s114.833,256,256,256s256-114.844,256-256S397.167,0,256,0z M256,490.667 C126.604,490.667,21.333,385.396,21.333,256S126.604,21.333,256,21.333S490.667,126.604,490.667,256S385.396,490.667,256,490.667 z" />
+  <path stroke="black" stroke-width="7" fill="white"
+  d="M357.771,247.031l-149.333-96c-3.271-2.135-7.5-2.25-10.875-0.396C194.125,152.51,192,156.094,192,160v192 c0,3.906,2.125,7.49,5.563,9.365c1.583,0.865,3.354,1.302,5.104,1.302c2,0,4.021-0.563,5.771-1.698l149.333-96 c3.042-1.958,4.896-5.344,4.896-8.969S360.813,248.99,357.771,247.031z M213.333,332.458V179.542L332.271,256L213.333,332.458z" />
+</svg>
+
+<svg version="1.1" id="pause" x="0px" y="0px"
+viewBox="0 0 512 512">
+  <path stroke="black" stroke-width="7" fill="white"
+  d="M256,0C114.833,0,0,114.844,0,256s114.833,256,256,256s256-114.844,256-256S397.167,0,256,0z M256,490.667 C126.604,490.667,21.333,385.396,21.333,256S126.604,21.333,256,21.333S490.667,126.604,490.667,256S385.396,490.667,256,490.667 z" />
+  <path stroke="black" stroke-width="7" fill="white"
+  d="M224,149.333h-64c-5.896,0-10.667,4.771-10.667,10.667v192c0,5.896,4.771,10.667,10.667,10.667h64 c5.896,0,10.667-4.771,10.667-10.667V160C234.667,154.104,229.896,149.333,224,149.333z M213.333,341.333h-42.667V170.667h42.667 V341.333z" />
+  <path stroke="black" stroke-width="7" fill="white"
+  d="M352,149.333h-64c-5.896,0-10.667,4.771-10.667,10.667v192c0,5.896,4.771,10.667,10.667,10.667h64 c5.896,0,10.667-4.771,10.667-10.667V160C362.667,154.104,357.896,149.333,352,149.333z M341.333,341.333h-42.667V170.667h42.667 V341.333z" />
+</svg>
+        </button>
+        <div id="player-info-wrapper">
+            <div id="player-timeline-wrapper">
+                <div id="player-timeline"></div>
+                <div id="player-timeline-playhead"></div>
+            </div>
+            <div id="player-timecode-wrapper">
+                <div id="player-timecode--left" class="player-timecode">00:00</div>
+                <div id="player-timecode--right" class="player-timecode">00:00</div>
+            </div>
+            <div id="player-title-wrapper">
+                <button id="player-previous" class="player-change">
+                    <svg id="arrow" height="512" viewBox="0 0 546.551 546.551" width="512" xmlns="http://www.w3.org/2000/svg"><path fill="white" d="m273.283 512.39c-6.105 0-11.743-3.253-14.796-8.54l-256.198-444.068c-3.053-5.288-3.053-11.793 0-17.081s8.691-8.54 14.796-8.54h512.38c6.105 0 11.743 3.253 14.796 8.54 3.052 5.288 3.052 11.793 0 17.081l-256.181 444.068c-3.053 5.288-8.691 8.54-14.797 8.54zm-226.623-444.068 226.624 392.809 226.606-392.809z"/></svg>
+                </button>
+                <div id="player-title"></div>
+                <button id="player-next" class="player-change">
+                    <svg id="arrow" height="512" viewBox="0 0 546.551 546.551" width="512" xmlns="http://www.w3.org/2000/svg"><path fill="white" d="m273.283 512.39c-6.105 0-11.743-3.253-14.796-8.54l-256.198-444.068c-3.053-5.288-3.053-11.793 0-17.081s8.691-8.54 14.796-8.54h512.38c6.105 0 11.743 3.253 14.796 8.54 3.052 5.288 3.052 11.793 0 17.081l-256.181 444.068c-3.053 5.288-8.691 8.54-14.797 8.54zm-226.623-444.068 226.624 392.809 226.606-392.809z"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
     <audio crossOrigin="anonymous" src= type="audio/mpeg">
     </audio>
     <script type="text/javascript" src=
@@ -536,6 +703,34 @@
         }
     </script>
     <script type="text/javascript">
+        const getFormattedNumber = duration => {
+            const minutes = Math.floor(duration / 60);
+            const seconds = Math.floor(duration - minutes * 60);
+            const formattedMinutes = ("0" + minutes).slice(-2);
+            const formattedSeconds = ("0" + seconds).slice(-2);
+            return `${formattedMinutes}:${formattedSeconds}`;
+        }
+
+        const updateUIInfo = () => {
+            const track = tracks[selectedTrack];
+                                       
+            const titleElement = document.getElementById("player-title").innerHTML = tracks[selectedTrack].title;
+
+            const timecodeElement = document.getElementById("player-timecode--right").innerHTML = getFormattedNumber(tracks[selectedTrack].duration);
+        }
+
+        const updatePlayerButton = () => {
+            const buttonElement = document.getElementById("player-button");
+            if (isPlaying) {
+                buttonElement.classList.add("player-button--play");
+                buttonElement.classList.remove("player-button--pause");
+            } else {
+                buttonElement.classList.add("player-button--pause");
+                buttonElement.classList.remove("player-button--play");               
+            }
+        }
+
+
         // Canvas setup
         const fs = document.getElementById("FSHADER_SOURCE").textContent;
         const canvas = document.querySelector("#canvas");
@@ -550,29 +745,19 @@
 
         let selectedTrack = null;
     
+        // Fetch soundcloud tracks
         fetch(infoUrl)
             .then(response => response.json())
             .then(data => {
                 tracks = data.map(t => {
                     return {
-                        id: t.id, title: t.title
+                        id: t.id, title: t.title, description: t.description, duration: t.duration
                     }});
 
-                selectedTrack = tracks[0];
+                selectedTrack = 0;
 
-                console.log(data);
-
-                const parent = document.getElementById("tracklist");
-                data.forEach((track, i) => {
-                    const child = document.createElement("div");
-                    child.id = track.id;
-                    child.onclick = () => {
-                        handleTrackClick(i);
-                    }
-
-                    child.insertAdjacentHTML("beforeend", `<p>${track.title}</p>`);
-                    parent.appendChild(child);
-                })
+                updateUIInfo();
+                                      
             });
 
         const getStreamUrl = (trackId) => (
@@ -588,6 +773,10 @@
 
         // Animation variables
         let isPlaying = false;
+        let isStopped = true;
+
+        let pausedAt = null;
+
         let isDistorting = false;
 
         let ballSpeed = 0.2;
@@ -595,27 +784,72 @@
         const ballSpeedNormal = 0.8;
         const ballSpeedFast = 2.2;
 
-        const play = () => {
-            if (selectedTrack) {
-                audioElement.src = getStreamUrl(selectedTrack.id);
-                audioContext.resume();
-                audioElement.currentTime = 180;
-                audioElement.play();               
-
-                isPlaying = true;
+        const play = (pausedAt) => {
+            if (isPlaying) {           
+                pause()
+                return;
             }
+
+            if (tracks[selectedTrack]) {
+                audioElement.src = getStreamUrl(tracks[selectedTrack].id);
+                audioContext.resume();
+                if (pausedAt) {        
+                    audioElement.currentTime = pausedAt;
+                }
+                audioElement.play();               
+                isPlaying = true;
+                isStopped = false;
+            }
+
+            updatePlayerButton();
         }
 
-        const handleTrackClick = (trackIndex) => {
-            const oldElement = document.getElementById(`${selectedTrack.id}`)
-            oldElement.classList.remove("track--selected");
-
-            selectedTrack = tracks[trackIndex];
-
-            const newElement = document.getElementById(`${selectedTrack.id}`)
-            newElement.classList.add("track--selected");
-            play();         
+        const pause = (stop) => {
+            if (tracks[selectedTrack]) {
+                audioElement.pause();  
+                                       
+                isPlaying = false;
+            }
+            updatePlayerButton();
         }
+
+        const stop = () => {
+            audioElement.pause();
+            audioElement.currentTime = 0;
+            isStopped = true;          
+            isPlaying = false;         
+            updatePlayerButton();                             
+        }
+
+        const handleNextTrackClick = () => {
+            selectedTrack += 1;
+
+            if (selectedTrack >= tracks.length) {
+                selectedTrack = tracks.length - 1;
+            }
+            stop();
+            updateUIInfo();            
+        }
+
+        const handlePreviousTrackClick = (trackIndex) => {
+            selectedTrack -= 1;        
+
+            if (selectedTrack < 0) {
+                selectedTrack = 0;
+            }
+            stop();
+            updateUIInfo();
+        }
+
+        document.getElementById("player-button").onclick = () => {
+            if (isStopped) {
+                play()
+            } else {
+                play(audioElement.currentTime);
+            }
+        };
+        document.getElementById("player-next").onclick = handleNextTrackClick;
+        document.getElementById("player-previous").onclick = handlePreviousTrackClick;
 
         audioSource.connect(analyser);      
         analyser.connect(audioContext.destination);       
@@ -629,9 +863,6 @@
         // Uniforms
         sandbox.setUniform("u_texture","logo.jpg");
         sandbox.setUniform("u_ballSpeed", ballSpeed);
-
-        console.log("BUFFER LENGTH");
-        console.log(bufferLength);
 
         let oldTime = 0;
 
@@ -651,7 +882,6 @@
 
             // Start animation
             if (isPlaying && ballSpeed < ballSpeedNormal) {
-                console.log("ey");
                 ballSpeed += ballAcceleration;
                 if (ballSpeed > ballSpeedNormal) {
                     ballSpeed = ballSpeedNormal;
@@ -676,9 +906,13 @@
 
             let ms = timestamp - oldTime;
             let fps = Math.ceil(1/(ms/1000))
-            document.getElementById("fps").innerHTML = fps;
+            //document.getElementById("fps").innerHTML = fps;
 
             oldTime = timestamp;
+
+
+            // Update HTML
+            const timecodeElement = document.getElementById("player-timecode--left").innerHTML = getFormattedNumber(audioElement.currentTime);
         }
 
         window.requestAnimationFrame(update);
