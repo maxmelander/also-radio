@@ -255,6 +255,18 @@
               opacity: 0 !important;                                  
               transition: opacity 0s !important;
           }
+
+          #player-next svg path, #player-previous svg path {
+              stroke: white;
+              stroke-width: 0;
+
+              transition: stroke-width .5s ease;
+          }
+
+          #player-next:hover svg path, #player-previous:hover svg path {
+              stroke: white;
+              stroke-width: 15;
+          }
     </style>
 </head>
 <body>
