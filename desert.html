@@ -5,6 +5,14 @@
     <meta content="utf-8" http-equiv="encoding">
     <title>Also Radio</title>
     <style type="text/css">
+      #also-radio-wrapper {
+          opacity: 0;
+          animation: fade-in 3s ease-in-out forwards;
+      }
+      @keyframes fade-in {
+          from {opcity: 0;}
+          to {opacity: 1;}
+      }
           body {
             margin: 0;
             width: 100vw;
@@ -50,6 +58,8 @@
 
           button {
               z-index: 9999;
+              outline: none;
+              -webkit-appearance: button;
           }
 
           button:hover {
@@ -79,12 +89,15 @@
               flex-direction: column;         
               justify-content: center;        
               align-items: center;            
+
+              opacity: 0;
+              animation: fade-in 2s ease forwards;
+              animation-delay: 3s;
           }
 
           #player-button {
               width: 90px;
               height: 90px;                   
-              -webkit-appearance: button;
               border: none;
               background: none;               
               color: white;                   
@@ -270,6 +283,7 @@
     </style>
 </head>
 <body>
+  <div id="also-radio-wrapper">
     <canvas id="canvas"></canvas>
     <a href="https://www.soundcloud.com/alsoradio" target="_blank">
     <img src="sc.png" id="sc-logo"></img>
@@ -339,6 +353,7 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
         <button id="player-info">˅ info</button>
         <div id="player-description" class="player-description--hidden"></div>
     </div>
+    </div>
     <audio crossOrigin="anonymous" src= type="audio/mpeg">
     </audio>
     <script type="text/javascript" src=
@@ -348,8 +363,8 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
         #define DAY        
 
         precision highp float;
-        uniform vec2 u_mouse;
         uniform float u_time;
+        uniform float u_currentTime;
         uniform vec2 u_resolution;
         uniform sampler2D u_texture;
 
@@ -361,7 +376,7 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
         uniform float u_distort; // mix in field distortion effect
         uniform float u_ballSpeed;
 
-        vec3 _CameraPosition = vec3(0.0, 0.6, 3.0);
+        vec3 _CameraPosition = vec3(0.0, 0.6, 0.0);
 
         /* COLORS */
 
@@ -389,17 +404,6 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
         vec3 _SphereSpecColor_1 = vec3(0.5, 0.2, 0.5);
         vec3 _FresnelColor_1 = vec3(0.15, 0.05, 0.05);
 
-        // Golden
-        vec3 _SkyTopColor_2 = vec3(0.78, 0.35, 0.2);
-        vec3 _SkyBottomColor_2 = vec3(0.85, 0.25, 0.2);
-        vec3 _SunColor_2 = vec3(4.0, 1.1, 0.7);
-        vec3 _SkyColor_2 = vec3(0.5, 0.1, 0.2);
-        vec3 _BounceColor_2 = vec3(0.6, 0.1, 0.1);
-        vec3 _GlitterColor_2 = vec3(0.3, 0.3, 0.5);
-        vec3 _OceanColor_2 = vec3(2.0, 2.0, 10.0);
-        vec3 _DistanceColor_2 = vec3(0.49, 0.1, 0.1);
-        vec3 _SphereSpecColor_2 = vec3(3.0, 1.0, 1.0);
-
         vec3 _SkyTopColor = mix(_SkyTopColor_0, _SkyTopColor_1, u_tod);
         vec3 _SkyBottomColor =  mix(_SkyBottomColor_0, _SkyBottomColor_1, u_tod);
         vec3 _SunColor = mix(_SunColor_0, _SunColor_1, u_tod);
@@ -414,9 +418,7 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
         vec3 _SandColor = vec3(0.18, 0.16, 0.13);
         vec3 _SphereColor = vec3(0.2, 0.1, 0.4);
 
-        /* SIMPLEX NOISE */
-// Simplex 2D noise
-//
+        // Simplex 2D noise
         vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
 
         float snoise(vec2 v){
@@ -446,6 +448,15 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
             return 130.0 * dot(m, g);
         }
 
+      // Fast noise
+      float hash21(vec2 p) {
+          p = fract(p*vec2(123.34, 456.21));
+          p += dot(p, p+45.32);
+          return fract(p.x * p.y);
+      }
+
+
+        // NVIDIA Sine wave approximation
         float smoothCurve( float x, float smoothingFactor ) {
             return x * x *( (3.0 - smoothingFactor) - (2.0 - smoothingFactor) * x );
         }
@@ -462,13 +473,15 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
             return smoothCurve( triangleWave( x ), 0.0 );
         } 
 
-        float smin( float a, float b, float k )
-        {
+        float smin( float a, float b, float k ) {
             float h = clamp( 0.5+0.5*(b-a)/k, 0.0, 1.0 );
             return mix( b, a, h ) - k*h*(1.0-h);
         }
 
-        float sdPlane(vec3 pos)
+        // SD Functions
+        // 
+        // Desert plane
+        float sdDesert(vec3 pos)
         {
             float amp = u_bass / 3.;
 
@@ -485,7 +498,7 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
 
         float sdSphere(vec3 pos, float radius) {
 
-            float z = -2.0- (u_time - (u_mid * 1.2));
+            float z = -4.5- (mod(u_currentTime, 16.5) - (u_mid * 1.2));
             float y = -0.3 + ((0.6 + (smoothTriangleWave(u_time * 0.1)) ) * 0.7);
             vec3 cen = vec3(mix(-0.3, 0.3, smoothTriangleWave(u_time * 0.015)), y, z);
                          
@@ -514,12 +527,12 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
             // Metaballs
             vec3 ball_pos = pos;
             ball_pos.x = mod(abs(ball_pos.x), 5.0) - 1.5;
-            ball_pos.z += 0.3 * (sin(abs(ball_pos.z) * 1.0) - 0.5);
+            ball_pos.z += 0.3 * (((smoothTriangleWave(abs(ball_pos.z * 0.5)) + 1.) / 2.) - 0.5);
 
             float d1 = sdMetaballs(mix(pos, ball_pos, u_distort));
                                                                      
             // Ground
-            float d2 = sdPlane(pos);
+            float d2 = sdDesert(pos);
 
             // Combine
             d = smin(d1, d2, 0.5);
@@ -641,10 +654,11 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
         }
 
         vec3 sandNormal(vec2 uv, vec3 n) {
-            vec3 random = vec3(snoise(uv * 1420.), snoise(uv * 1420.), snoise(uv * 1500.));
+            float noise = hash21(uv * 1000.);
+            vec3 random = vec3(noise, fract(noise * 10.), fract(noise * 20.));
             vec3 s = normalize(random);
 
-            vec3 Ns = nlerp(n, s, 0.02);
+            vec3 Ns = nlerp(n, s, 0.08);
             return Ns;
         }
 
@@ -685,8 +699,8 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
         void main() {
             vec2 p = (2.0 * gl_FragCoord.xy - u_resolution.xy) / u_resolution.y;
 
-
-            _CameraPosition.z -= u_time;
+            // Reset camera position every 16.5s to avoid unstable ray marching with large numbers
+            _CameraPosition.z -= mod(u_currentTime, 16.5);
 
             // Camera target
             vec3 ta = _CameraPosition - vec3(0., 0.5, 800.);
@@ -706,19 +720,18 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
             vec3 col = mix(_SkyTopColor, _SkyBottomColor, exp(-10.0*rd.y));
 
             // STARS
-            vec2 star_uv = (gl_FragCoord.xy-0.5*u_resolution.xy) / u_resolution.y;
-            star_uv *= 12.;
+            vec2 sky_uv = (gl_FragCoord.xy-0.5*u_resolution.xy) / u_resolution.y;
+            vec2 star_uv = sky_uv  * 12.;
             vec2 star_gv = fract(star_uv) - .5;
             vec2 star_id = floor(star_uv);
 
-            float star_noise = snoise(star_id);
-            float star_distance = length(vec2(star_gv.x + ((star_noise - .5) * 0.8), star_gv.y + (fract(star_noise * 94.281)-.5) * 0.8)) * 8.;
+            float star_noise = hash21(star_id);
+            float star_distance = length(vec2(star_gv.x + ((star_noise - .5)), star_gv.y + (fract(star_noise * 94.281)-.5))) * 8.;
             float star_strength = smoothstep(.15, .05, star_distance);
             float star_glow = smoothstep(2.35, .005, star_distance);
-            col += vec3(star_strength*((star_noise * .4) + (u_mid * 0.9))) + (0.001 * vec3(star_glow)) * vec3(star_noise);
+            col += vec3(star_strength*((star_noise * .2) + (u_mid * 0.9))) + (0.001 * vec3(star_glow)) * vec3(star_noise);
 
             // SKY
-            vec2 sky_uv = (gl_FragCoord.xy-0.5*u_resolution.xy) / u_resolution.y;
             vec2 logo_uv = sky_uv * 1.8;
             logo_uv.x += 0.5;
             logo_uv.y += 0.36;
@@ -733,7 +746,7 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
             vec4 logo_color = clamp(logo * (0.05 + u_bass) + (logo_blur * (u_bass * 0.4)), 0.0 , 1.0) * logo_hue;
 
             float d = length(sky_uv);
-            float m = .01 / d;//smoothstep(.2, .05, d);
+            float m = .01 / d;
 
             col +=  (min(m, 0.9) * vec3(0.2 + (u_mid * 0.6), 0.2, 0.4));
             col += logo_color.rgb;
@@ -745,6 +758,7 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
                 vec3 pos = ro + t*rd;
                 vec3 nor = calcNormal(pos);
                 vec2 uv = fract(textureMapping(pos) * 4.);
+
                 vec3 sand_nor = sandNormal(uv, nor);
 
                 // Lights
@@ -787,7 +801,6 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
                     vec3 fresnel = fresnelSchlick(sand_nor, -rd);
                     col += _SphereSpecColor * spec;
                     col += fresnel * _FresnelColor;
-                    //col += vec3(1., 1., 1.) * 1. - 
                 }
 
                 float distance = clamp((t-15.) / 20., 0.0, 1.0);
@@ -817,7 +830,7 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
             const track = tracks[selectedTrack];
                                        
             document.getElementById("player-title").innerHTML = tracks[selectedTrack].title;
-            document.getElementById("player-timecode--right").innerHTML = getFormattedNumber(tracks[selectedTrack].duration);
+            document.getElementById("player-timecode--right").innerHTML = getFormattedNumber(tracks[selectedTrack].duration / 1000);
             document.getElementById("player-description").innerHTML = tracks[selectedTrack].description;
 
         }
@@ -997,7 +1010,7 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
             sandbox.setUniform("u_high", high / 255);
             sandbox.setUniform("u_distort", audioElement.currentTime % 20 > 15 ? 1 : 0);
             if (audioElement.currentTime && audioElement.duration) {
-                sandbox.setUniform("u_tod", 1 - (audioElement.currentTime / audioElement.duration));
+                sandbox.setUniform("u_tod", 1 - (audioElement.currentTime / (audioElement.duration * 1.3)));
             }
 
             // Start animation
@@ -1022,11 +1035,12 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
             }
 
             sandbox.setUniform("u_ballSpeed", ballSpeed);
+            sandbox.setUniform("u_currentTime", audioElement.currentTime);
+
             window.requestAnimationFrame(update);
 
             let ms = timestamp - oldTime;
             let fps = Math.ceil(1/(ms/1000))
-            //document.getElementById("fps").innerHTML = fps;
 
             oldTime = timestamp;
 
