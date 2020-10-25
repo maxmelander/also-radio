@@ -7,21 +7,46 @@
     <style type="text/css">
       #also-radio-wrapper {
           opacity: 0;
-          animation: fade-in 3s ease-in-out forwards;
+          animation: also-radio-fade-in 3s ease-in-out forwards;
+          height: 80vw;
+          max-height: 85vh;
+          position: relative;
+      }                                   
+
+      #also-radio-error {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          color: beige;
+          background: crimson;
+          padding: 12px;
+          border-radius: 15px;
+          box-sizing: border-box;
+          z-index: 999;
+          opacity: 0;
+          user-select: none;  
+          transition: opacity .5s ease;
       }
-      @keyframes fade-in {
+
+      .also-radio-error--show {
+          opacity: 1 !important;
+      }
+
+      @keyframes also-radio-fade-in {
           from {opcity: 0;}
           to {opacity: 1;}
+      }
+
+      @keyframes also-radio-fade-in-player {
+          from {opcity: 0;}
+          to {opacity: 0.8;}
       }
           body {
             margin: 0;
             width: 100vw;
             height: 100vh;
             background: black;
-          }
-
-          h1, p {              
-              font-family: 'helvetica';
           }
 
           p {
@@ -35,22 +60,18 @@
               cursor: pointer;
           }
 
-          #canvas {
-            width: 80vw;
-            height: 80vh;
+          #also-radio-canvas {
+            width: 100%;
+            height: 100%;
             box-sizing: border-box;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            border-radius: 24px;
+            border-radius: 24px;          
             z-index: 0;
           }
 
           #sc-logo {
               position: absolute;
-              top: 120px;
-              left: 12vw;
+              top: 18px;
+              left: 18px;                 
               z-index: 2;
               width: 70px;
           }
@@ -79,8 +100,8 @@
 
           #player {
               position: absolute;
-              width: 80vw;
-              bottom: 100px;                  
+              width: 100%;
+              bottom: 0px;                  
               left: 50%;
               transform: translateX(-50%);
               z-index: 2;                     
@@ -89,10 +110,30 @@
               flex-direction: column;         
               justify-content: center;        
               align-items: center;            
+              opacity: 1;
+              transition: opacity 2s ease;
+          }
 
-              opacity: 0;
-              animation: fade-in 2s ease forwards;
-              animation-delay: 3s;
+          .player--hidden {
+              opacity: 0 !important;
+          }
+
+          @media only screen and (max-width: 600px) {
+              #also-radio-wrapper {
+                  height: 140vw !important;
+              }
+
+              #player {
+                  width: 100vw !important;
+              }
+
+              #player-title {
+                  font-size: 16px !important;
+              }
+
+              .player-timecode {
+                  font-size: 14px !important;
+              }
           }
 
           #player-button {
@@ -110,11 +151,13 @@
               fill: white;       
           }
 
-          #player-button #play, #player-button #pause {
+          #player-button #play, #player-button #play--hover, #player-button #pause, #player-button #pause--hover {
               position: absolute;
               top: 0;
               left: 0;             
               transition: opacity .5s ease;
+              width: 100%;
+              height: 100%;
           }
 
           #player-button:hover #play, #player-button:hover #pause {
@@ -195,7 +238,6 @@
 
           .player-timecode {
               color: white;                                                  
-              font-family: "helvetica";
               font-weight: lighter;
           }
 
@@ -243,8 +285,6 @@
           #player-title {
               color: white;
               font-size: 20px;
-              font-family: "helvetica";
-                         
           }
 
 
@@ -252,7 +292,6 @@
               margin-top: 6px;          
               margin-bottom: 24px;
               width: 80%;                
-              font-family: "helvetica";
               font-weight: lighter;      
               color: white;
               font-size: 13px;
@@ -262,7 +301,7 @@
               user-select: none;  
               transition: opacity 1s ease;
           }
-
+                                          
           .player-description--hidden {
               position: absolute !important;
               opacity: 0 !important;                                  
@@ -284,9 +323,11 @@
 </head>
 <body>
   <div id="also-radio-wrapper">
-    <canvas id="canvas"></canvas>
+    <audio id="also-radio-audio" crossorigin="anonymous"></audio>
+    <div id="also-radio-error">Could not load our mixes. If you are using an adblocker, please concider pausing it for this page and reloading. We do not send tracking info about you to Soundcloud, but your adblocker might still block our connection with Soundcloud.</div>
+    <canvas id="also-radio-canvas"></canvas>
     <a href="https://www.soundcloud.com/alsoradio" target="_blank">
-    <img src="sc.png" id="sc-logo"></img>
+    <img src="https://res.cloudinary.com/do4zvxwb9/image/upload/v1603553826/sc_sd8goy.png" id="sc-logo"></img>
     </a>
     <div id="player">
         <button id="player-button" class="player-button--pause">
@@ -354,8 +395,6 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
         <div id="player-description" class="player-description--hidden"></div>
     </div>
     </div>
-    <audio crossOrigin="anonymous" src= type="audio/mpeg">
-    </audio>
     <script type="text/javascript" src=
     "https://rawgit.com/patriciogonzalezvivo/glslCanvas/master/dist/GlslCanvas.js">
     </script>
@@ -374,7 +413,13 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
 
         uniform float u_tod; // time of day mix from 0 -> 1
         uniform float u_distort; // mix in field distortion effect
+
+        uniform float u_distort_2;
+        uniform float u_distort_3;
+        uniform float u_distort_4;
+
         uniform float u_ballSpeed;
+        uniform float u_playing;
 
         vec3 _CameraPosition = vec3(0.0, 0.6, 0.0);
 
@@ -416,6 +461,8 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
         vec3 _FresnelColor = mix(_FresnelColor_0, _FresnelColor_1, u_tod);
 
         vec3 _SandColor = vec3(0.18, 0.16, 0.13);
+
+        vec3 _SphereColor_Black = vec3(0.002, 0.001, 0.004);
         vec3 _SphereColor = vec3(0.2, 0.1, 0.4);
 
         // Simplex 2D noise
@@ -498,7 +545,7 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
 
         float sdSphere(vec3 pos, float radius) {
 
-            float z = -4.5- (mod(u_currentTime, 16.5) - (u_mid * 1.2));
+            float z = -4.5- (mod(u_currentTime, 16.5) - (u_mid * 1.0));
             float y = -0.3 + ((0.6 + (smoothTriangleWave(u_time * 0.1)) ) * 0.7);
             vec3 cen = vec3(mix(-0.3, 0.3, smoothTriangleWave(u_time * 0.015)), y, z);
                          
@@ -528,6 +575,7 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
             vec3 ball_pos = pos;
             ball_pos.x = mod(abs(ball_pos.x), 5.0) - 1.5;
             ball_pos.z += 0.3 * (((smoothTriangleWave(abs(ball_pos.z * 0.5)) + 1.) / 2.) - 0.5);
+
 
             float d1 = sdMetaballs(mix(pos, ball_pos, u_distort));
                                                                      
@@ -580,7 +628,7 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
 
             for (int i = 0; i < 450; i++) {
                 vec2 h = map(ro+rd*t);
-                if (abs(h.x) < 0.01) {
+                if (abs(h.x) < 0.015) {
                     res = vec2(t, h.y);
                     break;
                 }
@@ -696,11 +744,47 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
             return F0 + (1.0 - F0) * pow(1.0 - (dot(N, I)), 5.0);
         }
 
+        vec3 starColor(vec2 uv) {
+            vec2 star_uv = uv  * 12.;
+            vec2 star_gv = fract(star_uv) - .5;
+            vec2 star_id = floor(star_uv);
+
+            float star_noise = hash21(star_id);
+            float star_distance = length(vec2(star_gv.x + ((star_noise - .5)), star_gv.y + (fract(star_noise * 94.281)-.5))) * 7.;
+            float star_strength = smoothstep(.15, .05, star_distance);
+            float star_glow = smoothstep(2.35, .005, star_distance);
+
+            return vec3(star_strength*((star_noise * .1) + (u_mid * 0.8))) + (0.0015 * vec3(star_glow)) * vec3(star_noise);
+        }
+
+        vec3 logoColor(vec2 uv) {
+            vec2 logo_uv = uv * 1.8;                          
+            logo_uv.x += 0.5;
+            logo_uv.y += 0.36; 
+
+            vec3 logo_hue = vec3(1.2, 1.0, 1.0);
+
+            vec3 logo_blur = clamp(blur(u_texture, logo_uv), 0., 1.).rgb;
+            vec3 logo = clamp(texture2D(u_texture, logo_uv), 0., 1.).rgb;
+
+            return clamp(logo * (0.05 + u_bass) + (logo_blur * (u_bass * 0.4)), 0.0 , 1.0) * logo_hue;
+        }
+
+        vec3 moonColor(vec2 uv, float pos_sin) {              
+            vec2 moon_uv = uv;
+            moon_uv.x += 0.02 - (0.1 * pos_sin);              
+            float d = length(moon_uv);
+            float m = .01 / d;
+
+            return min(m, 0.9) * vec3(0.2 + (u_mid * 0.6), 0.2, 0.4);   
+        }
+
         void main() {
             vec2 p = (2.0 * gl_FragCoord.xy - u_resolution.xy) / u_resolution.y;
 
             // Reset camera position every 16.5s to avoid unstable ray marching with large numbers
             _CameraPosition.z -= mod(u_currentTime, 16.5);
+            //_CameraPosition.z -= u_time * u_playing;
 
             // Camera target
             vec3 ta = _CameraPosition - vec3(0., 0.5, 800.);
@@ -716,43 +800,19 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
             float fov = 1.6;
             vec3 rd = normalize(p.x * uu + p.y * vv + fov * ww);
 
-            // Color
+            // Color = sky gradient to start, then more stuff is added as we
+            // march through our scene
             vec3 col = mix(_SkyTopColor, _SkyBottomColor, exp(-10.0*rd.y));
 
-            // STARS
+            // Render sky
             vec2 sky_uv = (gl_FragCoord.xy-0.5*u_resolution.xy) / u_resolution.y;
-            vec2 star_uv = sky_uv  * 12.;
-            vec2 star_gv = fract(star_uv) - .5;
-            vec2 star_id = floor(star_uv);
+            col += starColor(sky_uv);                         
+            col += logoColor(sky_uv);                         
 
-            float star_noise = hash21(star_id);
-            float star_distance = length(vec2(star_gv.x + ((star_noise - .5)), star_gv.y + (fract(star_noise * 94.281)-.5))) * 8.;
-            float star_strength = smoothstep(.15, .05, star_distance);
-            float star_glow = smoothstep(2.35, .005, star_distance);
-            col += vec3(star_strength*((star_noise * .2) + (u_mid * 0.9))) + (0.001 * vec3(star_glow)) * vec3(star_noise);
+            float sun_pos_wave = (smoothTriangleWave(u_time * 0.1) * 2.) - 1.; // Used to animate sun/moon position
+            col += moonColor(sky_uv, sun_pos_wave);           
 
-            // SKY
-            vec2 logo_uv = sky_uv * 1.8;
-            logo_uv.x += 0.5;
-            logo_uv.y += 0.36;
-
-            // Animation: soon/moon
-            float sun_pos_wave = (smoothTriangleWave(u_time * 0.1) * 2.) - 1.;
-            sky_uv.x += 0.02 - (0.1 * sun_pos_wave);
-
-            vec4 logo_hue = vec4(1.2, 1.0, 1.0, 1.0);
-            vec4 logo_blur = clamp(blur(u_texture, logo_uv), 0., 1.);
-            vec4 logo = clamp(texture2D(u_texture, logo_uv), 0., 1.);
-            vec4 logo_color = clamp(logo * (0.05 + u_bass) + (logo_blur * (u_bass * 0.4)), 0.0 , 1.0) * logo_hue;
-
-            float d = length(sky_uv);
-            float m = .01 / d;
-
-            col +=  (min(m, 0.9) * vec3(0.2 + (u_mid * 0.6), 0.2, 0.4));
-            col += logo_color.rgb;
-
-
-            vec2 tm = castRay(ro, rd);
+            vec2 tm = castRay(ro, rd);                        
             if (tm.y > 0.0) {
                 float t = tm.x;
                 vec3 pos = ro + t*rd;
@@ -765,7 +825,7 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
                 vec3 ocean_light = normalize(vec3(0., 2., -3.));
                 vec3 sun_dir = normalize(vec3(0. + 4.* sun_pos_wave, 5.6, -3.2));
 
-                // Lighting
+                // Lighting calculations
                 float occ = calcOcclusion(pos, sand_nor);
                 float sun_sha = clamp(castShadow(pos+sand_nor*0.01, sun_dir), 0.0 ,1.0);
                 float sky_dif = 0.9 * diffuse(sand_nor, vec3(0.0, 1.0, 0.0));
@@ -776,12 +836,13 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
                 float spec = max(rim, oceanSpec) / (t);
 
                 vec3 glitterNoise = vec3(snoise(uv*300.), snoise(uv*400.), snoise(uv*440.));
-                float glitterSpec = glitterSpecular(uv, sun_dir, -rd, 0.9, glitterNoise) / t;
-                float glitterSpecLots = glitterSpecular(uv, sun_dir, -rd, 0.2, glitterNoise) / t;
+                float glitterSpec = glitterSpecular(uv, sun_dir, -rd, 0.9, glitterNoise) / (t/ 1.5);
+                float glitterSpecLots = glitterSpecular(uv, sun_dir, -rd, 0.2, glitterNoise) / (t/2.);
 
                 vec3 mate = _SandColor;
                 if (tm.y > 1.5) {
-                    mate = _SphereColor;
+                    vec3 sphereColor = mix(_SphereColor, _SphereColor_Black, u_distort_4);
+                    mate = sphereColor;
                 }
 
                 // Light color
@@ -803,161 +864,196 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
                     col += fresnel * _FresnelColor;
                 }
 
+                // Distance fog
                 float distance = clamp((t-15.) / 20., 0.0, 1.0);
                 col = mix(col, _DistanceColor, distance);      
             }
 
             col = pow( col, vec3(0.4545) );
 
-            if (u_distort == 1.) {
-                // col.g = mix(col.g, 0.1 - col.g, u_bass * 0.5);
-                //col.r = mix(col.g, 0.9 - col.r, 0.);
-            }
+            col.b = mix(col.b, 0.4 - col.r, u_distort_2 * (u_bass * 0.7));
+            col.g = mix(col.g, 0.1 - col.g, u_distort_3 * (u_bass * 0.7));
 
-            gl_FragColor = vec4(col, 1.0); // return reddish-purple
+            gl_FragColor = vec4(col, 1.0);
         }
     </script>
     <script type="text/javascript">
-        const getFormattedNumber = duration => {
-            const minutes = Math.floor(duration / 60);
-            const seconds = Math.floor(duration - minutes * 60);
-            const formattedMinutes = ("0" + minutes).slice(-2);
-            const formattedSeconds = ("0" + seconds).slice(-2);
-            return `${formattedMinutes}:${formattedSeconds}`;
-        }
+      window.addEventListener('load', (event) => {
+      const BALL_ACC = 0.01;
+      const BALL_SPEED_NORMAL = 0.8;
+      const BALL_SPEED_FAST = 2.2;
+      const INFO_URL = "https://api.soundcloud.com/users/287905929/tracks?client_id=9e05e349251475056d1bc81acbf08c71&secret_token=track";
 
-        const updateUIInfo = () => {
-            const track = tracks[selectedTrack];
-                                       
-            document.getElementById("player-title").innerHTML = tracks[selectedTrack].title;
-            document.getElementById("player-timecode--right").innerHTML = getFormattedNumber(tracks[selectedTrack].duration / 1000);
-            document.getElementById("player-description").innerHTML = tracks[selectedTrack].description;
+      const fs = document.getElementById("FSHADER_SOURCE").textContent;
+      const canvas = document.getElementById("also-radio-canvas");
+      canvas.width = canvas.clientWidth * 2;
+      canvas.height = canvas.clientHeight * 2;
+      const glslCanvas = new GlslCanvas(canvas);
+      glslCanvas.load(fs);
 
-        }
+      let tracks = [];
+      let selectedTrack = 0;
+      let isPlaying = false;
+      let isStopped = true;
+      let showingInfo = false;             
 
-        const updatePlayerButton = () => {
-            const buttonElement = document.getElementById("player-button");
-            if (isPlaying) {
-                buttonElement.classList.add("player-button--play");
-                buttonElement.classList.remove("player-button--pause");
-            } else {
-                buttonElement.classList.add("player-button--pause");
-                buttonElement.classList.remove("player-button--play");               
-            }
-        }
+      // Audio setup
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      const audioContext = new AudioCtx();
+      const analyser = audioContext.createAnalyser();
+      const audioElement = document.getElementById("also-radio-audio");
+      const audioSource = audioContext.createMediaElementSource(audioElement);
+      audioSource.connect(analyser);      
+      analyser.connect(audioContext.destination);       
+      analyser.fftSize = 1024;
+      const bufferLength = analyser.frequencyBinCount;
+      let dataArray = new Uint8Array(bufferLength);
 
+      // Animation variables
+      let ballSpeed = 0.2;
+      let isDistorting = false;
+      let isDistorting2 = 0.0;
+      let isDistorting3 = 0.0;
+      let isDistorting4 = 0.0;
 
-        // Canvas setup
-        const fs = document.getElementById("FSHADER_SOURCE").textContent;
-        const canvas = document.querySelector("#canvas");
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        const sandbox = new GlslCanvas(canvas);
-        sandbox.load(fs);
+      let timestamp = 0.0;
+      let startCurrentTime = 0.0;
+      let currentTime = 0.0;
 
-        let tracks = [];
+      // mouse move stuff
+      let timeout;
+      let hideControls = false;
 
-        const infoUrl = "https://api.soundcloud.com/users/287905929/tracks?client_id=9e05e349251475056d1bc81acbf08c71&secret_token=track";
+      const setUniform = (name, value) => {
+          try {
+              glslCanvas.setUniform(name, value);
+          } catch (e) {}
+      }
 
-        let selectedTrack = null;
-    
-        // Fetch soundcloud tracks
-        fetch(infoUrl)
-            .then(response => response.json())
-            .then(data => {
-                tracks = data.map(t => {
-                    return {
-                        id: t.id, title: t.title, description: t.description, duration: t.duration
-                    }});
+      const getFormattedNumber = duration => {              
+          const minutes = Math.floor(duration / 60);
+          const seconds = Math.floor(duration - minutes * 60);
+          const formattedMinutes = ("0" + minutes).slice(-2);
+          const formattedSeconds = ("0" + seconds).slice(-2);
+          return `${formattedMinutes}:${formattedSeconds}`;
+      }
 
-                selectedTrack = 0;
+      const updateUIInfo = () => {
+          const track = tracks[selectedTrack];
+          document.getElementById("player-title").innerHTML = track.title;
+          document.getElementById("player-timecode--right").innerHTML = getFormattedNumber(track.duration / 1000);
+          document.getElementById("player-description").innerHTML = track.description;
+          if (hideControls) {
+              document.getElementById("player").classList.add("player--hidden");
+          } else {
+              document.getElementById("player").classList.remove("player--hidden");
+          }
+      }
 
-                updateUIInfo();
-                                      
-            });
+      const updatePlayerButton = () => {
+          const buttonElement = document.getElementById("player-button");
+          if (isPlaying) {
+              buttonElement.classList.add("player-button--play");
+              buttonElement.classList.remove("player-button--pause");
+          } else {
+              buttonElement.classList.add("player-button--pause");
+              buttonElement.classList.remove("player-button--play");               
+          }
+      }
 
-        const getStreamUrl = (trackId) => (
-            `https://api.soundcloud.com/tracks/${trackId}/stream?client_id=9e05e349251475056d1bc81acbf08c71&secret_token=track`
-        )
-    
-        // Audio setup
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        const audioContext = new AudioCtx();
-        const analyser = audioContext.createAnalyser();
-        const audioElement = document.querySelector('audio');                                                                       
-        const audioSource = audioContext.createMediaElementSource(audioElement);
+      const fetchTrackInfo = async () => {
+          const response = await fetch(INFO_URL);
 
-        // Animation variables
-        let isPlaying = false;
-        let isStopped = true;
+          if (!response.ok) {
+              document.getElementById("also-radio-error").classList.add("also-radio-error--show");
+              return;
+          }
 
-        let pausedAt = null;
+          const data = await response.json();
 
-        let isDistorting = false;
+          console.log("got the data");
 
-        let ballSpeed = 0.2;
-        const ballAcceleration = 0.01;
-        const ballSpeedNormal = 0.8;
-        const ballSpeedFast = 2.2;
+          tracks = await Promise.all(data.map(async track => {
+              const streamsResponse = await fetch(getStreamsUrl(track.id));
+              const streamsData = await streamsResponse.json();
 
-        const play = (pausedAt) => {
-            if (isPlaying) {           
-                pause()
-                return;
-            }
+              const t = {
+                  id: track.id,
+                  title: track.title,
+                  description: track.description,
+                  duration: track.duration,
+                  streamUrl: streamsData.http_mp3_128_url,
+              }
 
-            if (tracks[selectedTrack]) {
-                audioElement.src = getStreamUrl(tracks[selectedTrack].id);
-                audioContext.resume();
-                if (pausedAt) {        
-                    audioElement.currentTime = pausedAt;
-                }
-                audioElement.play();               
-                isPlaying = true;
-                isStopped = false;
-            }
+              return t;
+          }));
 
-            updatePlayerButton();
-        }
+          updateUIInfo();
+      }
 
-        const pause = (stop) => {
-            if (tracks[selectedTrack]) {
-                audioElement.pause();  
-                                       
-                isPlaying = false;
-            }
-            updatePlayerButton();
-        }
+      const getStreamsUrl = (trackId) => (
+  `https://api.soundcloud.com/tracks/${trackId}/streams?client_id=9e05e349251475056d1bc81acbf08c71`
+      );
 
-        const stop = () => {
-            audioElement.pause();
-            audioElement.currentTime = 0;
-            isStopped = true;          
-            isPlaying = false;         
-            updatePlayerButton();                             
-        }
+       const play = (pausedAt) => {
+          startCurrentTime = timestamp;
+          if (isPlaying) {           
+              pause()
+              return;
+          }
 
-        const handleNextTrackClick = () => {
-            selectedTrack += 1;
+          if (tracks[selectedTrack]) {
+              audioElement.src = tracks[selectedTrack].streamUrl;
+              audioContext.resume();
+              if (pausedAt) {        
+                  audioElement.currentTime = pausedAt;
+              }
+              audioElement.play();               
+              isPlaying = true;
+              isStopped = false;
+          }
+          updatePlayerButton();
+          setUniform("u_playing", 1);
+      }
 
-            if (selectedTrack >= tracks.length) {
-                selectedTrack = tracks.length - 1;
-            }
-            stop();
-            updateUIInfo();            
-        }
+      const pause = (stop) => {
+          if (tracks[selectedTrack]) {
+              audioElement.pause();  
+              isPlaying = false;
+          }
+          updatePlayerButton();
+          setUniform("u_playing", 0);
+      }
 
-        const handlePreviousTrackClick = (trackIndex) => {
-            selectedTrack -= 1;        
+      const stop = () => {
+          audioElement.pause();
+          audioElement.currentTime = 0;
+          isStopped = true;          
+          isPlaying = false;         
+          updatePlayerButton();                             
+          setUniform("u_playing", 0);
+      }
 
-            if (selectedTrack < 0) {
-                selectedTrack = 0;
-            }
-            stop();
-            updateUIInfo();
-        }
+      const handleNextTrackClick = () => {
+          selectedTrack += 1;
 
-      let showingInfo = false;
+          if (selectedTrack >= tracks.length) {
+              selectedTrack = tracks.length - 1;
+          }
+          stop();
+          updateUIInfo();            
+      }
+
+      const handlePreviousTrackClick = (trackIndex) => {
+          selectedTrack -= 1;        
+
+          if (selectedTrack < 0) {
+              selectedTrack = 0;
+          }
+          stop();
+          updateUIInfo();
+      }
+
       const handleInfoClick = () => {
           const descriptionElement = document.getElementById("player-description");
           const buttonElement = document.getElementById("player-info");
@@ -972,88 +1068,176 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
           }
       }
 
-      // ON CLICKS
-        document.getElementById("player-button").onclick = () => {
-            if (isStopped) {
-                play()
-            } else {
-                play(audioElement.currentTime);
-            }
-        };
-        document.getElementById("player-next").onclick = handleNextTrackClick;
-        document.getElementById("player-previous").onclick = handlePreviousTrackClick;
-        document.getElementById("player-info").onclick = handleInfoClick;
+      function throttled(delay, fn) {
+          let lastCall = 0;
+          return function (...args) {
+              const now = (new Date).getTime();
+              if (now - lastCall < delay) {
+                  return;
+              }
+              lastCall = now;
+              return fn(...args);
+          }
+      }
 
-        audioSource.connect(analyser);      
-        analyser.connect(audioContext.destination);       
+      const handleMouseMove = () => {
+          if (timeout) {
+              window.clearTimeout(timeout);
+          }
 
-        analyser.fftSize = 1024;
-        var bufferLength = analyser.frequencyBinCount;
-        var dataArray = new Uint8Array(bufferLength);
-                                              
+          timeout = window.setTimeout(() => {
+              if (isPlaying) {
+                  hideControls = true;
+                  updateUIInfo();
+              }
+          }, 3000);
+
+          if (hideControls) {
+              hideControls = false;
+              updateUIInfo();
+          }
+      }
+
+      const registerEventHandlers = () => {
+          document.getElementById("player-button").onclick = () => {
+              audioContext.resume();
+              if (isStopped) {
+                  play()
+              } else {
+                  play(audioElement.currentTime);
+              }
+          };
+          document.getElementById("player-next").onclick = handleNextTrackClick;
+          document.getElementById("player-previous").onclick = handlePreviousTrackClick;
+          document.getElementById("player-info").onclick = handleInfoClick;             
+
+          window.addEventListener("mousemove", throttled(200, handleMouseMove));
+      }
+
+      const setInitialUniformValues = () => {
+          setUniform("u_texture","https://res.cloudinary.com/do4zvxwb9/image/upload/v1603553822/logo_k9gbdp.jpg")
+          setUniform("u_ballSpeed", ballSpeed);             
+          setUniform("u_tod", 1);
+          setUniform("u_playing", 0);
+      }
+
+      const updateUniforms = () => {
+          // Audio analyzer uniforms
+          analyser.getByteFrequencyData(dataArray);
+
+          const bass = dataArray.slice(0, 4).reduce((acc, e) => acc+e) / 4;
+          const mid = dataArray.slice(100, 300).reduce((acc, e) => acc+e) / 199;
+          const high = dataArray.slice(300, 500).reduce((acc, e) => acc+e) / 199;
+
+          setUniform("u_bass", bass / 255);
+          setUniform("u_mid", mid / 255);
+          setUniform("u_high", high / 255);
+          setUniform("u_distort", audioElement.currentTime % 20 > 15 ? 1 : 0);         
+
+          setUniform("u_distort", isDistorting);
+          setUniform("u_distort_2", isDistorting2);
+          setUniform("u_distort_3", isDistorting3);
+          setUniform("u_distort_4", isDistorting4);
+
+          setUniform("u_ballSpeed", ballSpeed);
+          setUniform("u_currentTime", currentTime);
+
+          // Time of day
+          if (audioElement.currentTime && audioElement.duration) {
+              // From night to day to night again
+              const progress = 1 - (audioElement.currentTime / audioElement.duration);
+              let tod = 0;
+              if (progress > 0.5) {
+                  tod = Math.min(1., progress * 1.2);
+              } else {
+                  tod = Math.min(1., 1 - (progress * 1.2));
+              }
+              setUniform("u_tod", tod);
+          }
+      }
+
+      function update(timestamp){
+          timestamp = timestamp;
+
+          // We need a higher resolution currentTime
+          // than audioElement.currentTime for smooth animations
+          if (isPlaying) {
+              currentTime = (timestamp - startCurrentTime) / 1000;
+          }
+
+          // Start animation
+          if (isPlaying && ballSpeed < BALL_SPEED_NORMAL) {
+              ballSpeed += BALL_ACC;
+              if (ballSpeed > BALL_SPEED_NORMAL) {
+                  ballSpeed = BALL_SPEED_NORMAL;
+              }
+          }
+
+          if (isPlaying && !isDistorting && ballSpeed > BALL_SPEED_NORMAL) {
+              ballSpeed = BALL_SPEED_NORMAL;
+          }
+
+          // Distortion animation
+          if (isPlaying && audioElement.currentTime % 25 > 16) {
+              ballSpeed = BALL_SPEED_FAST;
+              isDistorting = true;
+          } else {
+              isDistorting = false;
+          }
+
+          if (isPlaying && audioElement.currentTime % 90 > 70) {
+              isDistorting2 += 0.01;
+              if (isDistorting2 >= 1) {
+                  isDistorting2 = 1
+              }
+          } else {
+              isDistorting2 -= 0.01;
+              if (isDistorting2 <= 0) {
+                  isDistorting2 = 0
+              }
+          }
+
+          if (isPlaying && audioElement.currentTime % 230 > 210) {
+              isDistorting3 += 0.01;
+              if (isDistorting3 >= 1) {
+                  isDistorting3 = 1
+              }
+          } else {
+              isDistorting3 -= 0.01;
+              if (isDistorting3 <= 0) {
+                  isDistorting3 = 0
+              }
+          }
+          const songProgress = (audioElement.currentTime / audioElement.duration);
+          if (songProgress > 0.43 && songProgress < 0.58 && isPlaying) {
+              isDistorting4 += 0.006;
+              if (isDistorting4 >= 1) {
+                  isDistorting4 = 1
+              }
+          } else {
+              isDistorting4 -= 0.006;
+              if (isDistorting4 <= 0) {
+                  isDistorting4  = 0
+              }
+          }
+
+          updateUniforms();
+
+          // Update HTML
+          document.getElementById("player-timecode--left").innerHTML = getFormattedNumber(audioElement.currentTime);
+          const percentage = (audioElement.currentTime / audioElement.duration) * 100;
+          document.getElementById("player-timeline-playhead").style.left = `${percentage}%`;
+          window.requestAnimationFrame(update);
+
+      }
+
+      fetchTrackInfo();
+      registerEventHandlers();
+      setInitialUniformValues();
+      update();
+      });             
 
 
-        // Uniforms
-        sandbox.setUniform("u_texture","logo.jpg");
-        sandbox.setUniform("u_ballSpeed", ballSpeed);
-
-        let oldTime = 0;
-
-        sandbox.setUniform("u_tod", 1);
-        const update = (timestamp) => {
-            analyser.getByteFrequencyData(dataArray);
-            const bass = dataArray.slice(0, 4).reduce((acc, e) => acc+e) / 4;
-            const mid = dataArray.slice(100, 300).reduce((acc, e) => acc+e) / 199;
-            const high = dataArray.slice(300, 500).reduce((acc, e) => acc+e) / 199;
-            sandbox.setUniform("u_bass", bass / 255);
-            sandbox.setUniform("u_mid", mid / 255);
-            sandbox.setUniform("u_high", high / 255);
-            sandbox.setUniform("u_distort", audioElement.currentTime % 20 > 15 ? 1 : 0);
-            if (audioElement.currentTime && audioElement.duration) {
-                sandbox.setUniform("u_tod", 1 - (audioElement.currentTime / (audioElement.duration * 1.3)));
-            }
-
-            // Start animation
-            if (isPlaying && ballSpeed < ballSpeedNormal) {
-                ballSpeed += ballAcceleration;
-                if (ballSpeed > ballSpeedNormal) {
-                    ballSpeed = ballSpeedNormal;
-                }
-            }
-
-            if (isPlaying && !isDistorting && ballSpeed > ballSpeedNormal) {
-                ballSpeed = ballSpeedNormal;
-            }
-
-            // Distortion animation
-            if (audioElement.currentTime % 20 > 13) {
-                ballSpeed = ballSpeedFast;
-                isDistorting = true;
-                sandbox.setUniform("u_distort", 1);
-            } else {
-                isDistorting = false;
-            }
-
-            sandbox.setUniform("u_ballSpeed", ballSpeed);
-            sandbox.setUniform("u_currentTime", audioElement.currentTime);
-
-            window.requestAnimationFrame(update);
-
-            let ms = timestamp - oldTime;
-            let fps = Math.ceil(1/(ms/1000))
-
-            oldTime = timestamp;
-
-
-            // Update HTML
-            document.getElementById("player-timecode--left").innerHTML = getFormattedNumber(audioElement.currentTime);
-            const percentage = (audioElement.currentTime / audioElement.duration) * 100;
-            document.getElementById("player-timeline-playhead").style.left = `${percentage}%`;
-
-
-        }
-
-        window.requestAnimationFrame(update);
     </script>
 </body>
 </html>
