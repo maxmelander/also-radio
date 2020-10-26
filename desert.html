@@ -551,7 +551,7 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
         float sdSphere(vec3 pos, float radius) {
 
             float z = -4.5- (mod(u_currentTime, 16.5) - (u_mid * 1.0));
-            float y = -0.3 + ((0.6 + (smoothTriangleWave(u_time * 0.1)) ) * 0.7);
+            float y = -0.1 + ((0.6 + (smoothTriangleWave(u_time * 0.1)) ) * 0.7);
             vec3 cen = vec3(mix(-0.3, 0.3, smoothTriangleWave(u_time * 0.015)), y, z);
                          
             return length(pos - cen) - (radius + (u_mid/ 6.));
@@ -562,7 +562,7 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
             float result = sdSphere(pos, 0.5);                            
 
             vec3 pos_2 = vec3(pos.x + mb_p_2.x, pos.y - mb_p_2.y, pos.z + mb_p_2.z);
-            vec3 pos_3 = vec3(pos.x - mb_p_3.x, pos.y + mb_p_3.y, pos.z + mb_p_3.z);
+            vec3 pos_3 = vec3(pos.x + mb_p_3.x, pos.y + mb_p_3.y, pos.z + mb_p_3.z);
 
             float ball_2 = sdSphere(pos_2, 0.4);
             float ball_3 = sdSphere(pos_3, 0.3);
@@ -818,15 +818,13 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
             col += moonColor(sky_uv, sun_pos_wave);           
 
             // Metaball positions
-            vec3 mb_p_2 = vec3((0.2 * u_mid * smoothTriangleWave(u_time * 0.5)) + smoothTriangleWave(u_time * (0.1 * u_ballSpeed)), (0.2* u_bass) * smoothTriangleWave(u_time * 0.4) -(0.3 * smoothTriangleWave(u_time * (0.033 * u_ballSpeed))), ( 0.8 * cos(u_time * (0.5 * u_ballSpeed))));
-            vec3 mb_p_3 = vec3((0.1 * u_mid * smoothTriangleWave(u_time * 0.6)) - smoothTriangleWave(u_time * (0.05 * u_ballSpeed)), (0.3* u_bass) * smoothTriangleWave(u_time * 0.05) - (0.5 * smoothTriangleWave(u_time * (0.08 * u_ballSpeed))), ( 0.8 * cos(u_time * (0.5 * u_ballSpeed))));
+            // We only want to calculate these once, not every time we call map
+            vec3 mb_p_2 = vec3((0.2 * u_mid * ((smoothTriangleWave(u_time * 0.5) * 2.) - 1.)) + ((smoothTriangleWave(u_time * (0.05 * u_ballSpeed)) * 2.) - 1.), (0.2* u_bass) * smoothTriangleWave(u_time * 0.4) -(0.3 * ((smoothTriangleWave(u_time * (0.033 * u_ballSpeed)) * 2.) - 1.)), ( 0.8 * cos(u_time * (0.5 * u_ballSpeed))));
+            vec3 mb_p_3 = vec3((0.1 * u_mid * ((smoothTriangleWave(u_time * 0.6) * 2.) - 1.)) - ((smoothTriangleWave(u_time * (0.01 * u_ballSpeed)) * 2.) - 1.), (0.3* u_bass) * smoothTriangleWave(u_time * 0.05) - (0.5 * ((smoothTriangleWave(u_time * (0.08 * u_ballSpeed)) * 2.) - 1.)), ( 0.8 * cos(u_time * (0.5 * u_ballSpeed))));
 
 
             // We don't need to raymarch the sky
-            vec2 tm = vec2(-1.);
-            if (sky_uv.y < 0.25) {
-                tm = castRay(ro, rd, mb_p_2, mb_p_3);                        
-            }
+            vec2 tm = castRay(ro, rd, mb_p_2, mb_p_3);                        
 
             if (tm.y > 0.0) {
                 float t = tm.x;
@@ -895,8 +893,8 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
     <script type="text/javascript">
       window.addEventListener('load', (event) => {
       const BALL_ACC = 0.01;
-      const BALL_SPEED_NORMAL = 0.8;
-      const BALL_SPEED_FAST = 2.2;
+      const BALL_SPEED_NORMAL = 0.7;
+      const BALL_SPEED_FAST = 1.8;
       const INFO_URL = "https://api.soundcloud.com/users/287905929/tracks?client_id=9e05e349251475056d1bc81acbf08c71&secret_token=track";
 
       const fs = document.getElementById("FSHADER_SOURCE").textContent;
