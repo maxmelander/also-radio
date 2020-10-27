@@ -1,0 +1,315 @@
+#also-radio-wrapper {
+    opacity: 0;
+    animation: also-radio-fade-in 3s ease-in-out forwards;
+    height: 80vw;
+    max-height: 85vh;
+    position: relative;
+}                                   
+
+#also-radio-error {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    color: beige;
+    background: crimson;
+    padding: 12px;
+    border-radius: 15px;
+    box-sizing: border-box;
+    z-index: 999;
+    opacity: 0;
+    user-select: none;  
+    transition: opacity .5s ease;
+}
+
+.also-radio-error--show {
+    opacity: 1 !important;
+}
+
+@keyframes also-radio-fade-in {
+    from {opcity: 0;}
+    to {opacity: 1;}
+}
+
+@keyframes also-radio-fade-in-player {
+    from {opcity: 0;}
+    to {opacity: 0.8;}
+}
+
+body {
+    margin: 0;
+    width: 100vw;
+    height: 100vh;
+    background: black;
+}
+
+p {
+    font-size: 24px;
+    padding: 12px;
+    border-radius: 12px;
+    margin: 0;
+}
+
+p:hover {
+    cursor: pointer;
+}
+
+#also-radio-canvas {
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    border-radius: 24px;          
+    z-index: 0;
+}
+
+#sc-logo {
+    position: absolute;
+    top: 18px;
+    left: 18px;                 
+    z-index: 2;
+    width: 70px;
+}
+
+
+button {
+    z-index: 9999;
+    outline: none;
+    -webkit-appearance: button;
+}
+
+button:hover {
+    cursor: pointer;
+}
+
+h1 {
+    color: white;
+    font-size: 69px;
+    position: absolute;
+    z-index: 1;
+}
+
+p {
+    color: white; 
+}
+
+#player {
+    position: absolute;
+    width: 100%;
+    bottom: 0px;                  
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;                     
+
+    display: flex;
+    flex-direction: column;         
+    justify-content: center;        
+    align-items: center;            
+    opacity: 1;
+    transition: opacity 2s ease;
+}
+
+.player--hidden {
+    opacity: 0 !important;
+}
+
+@media only screen and (max-width: 600px) {
+    #also-radio-wrapper {
+        height: 140vw !important;
+    }
+
+    #player {
+        width: 100vw !important;
+    }
+
+    #player-title {
+        font-size: 16px !important;
+    }
+
+    .player-timecode {
+        font-size: 14px !important;
+    }
+}
+
+#player-button {
+    width: 90px;
+    height: 90px;                   
+    border: none;
+    background: none;               
+    color: white;                   
+    margin-bottom: 4px;
+
+    position: relative;
+}                                   
+
+#player-button svg path {
+    fill: white;       
+}
+
+#player-button #play, #player-button #play--hover, #player-button #pause, #player-button #pause--hover {
+    position: absolute;
+    top: 0;
+    left: 0;             
+    transition: opacity .5s ease;
+    width: 100%;
+    height: 100%;
+}
+
+#player-button:hover #play, #player-button:hover #pause {
+    opacity: 0;
+}
+
+#player-button #play--hover, #player-button #pause--hover {
+    opacity: 0;
+
+    position: absolute;
+    top: 0;
+    left: 0;
+
+    transition: opacity .5s ease;
+}
+
+#player-button:hover #play--hover, #player-button:hover #pause--hover {
+    opacity: 1;
+}
+
+.player-button--play #play {
+    display: none !important;
+}
+.player-button--play #play--hover {
+    display: none !important;
+}
+
+.player-button--pause #pause {
+    display: none !important;
+}
+.player-button--pause #pause--hover {
+    display: none !important;
+}
+
+.player-button--play #pause {                       
+    display: inherit;
+}
+
+.player-button--pause #play {
+    display: inherit;
+}
+
+.player-button--pause #pause {
+    display: none;                                 
+}
+
+#player-info-wrapper{
+    width: 80%;                     
+}
+
+#player-timeline-wrapper{
+    width: 100%;                    
+    position: relative;                                            
+}
+
+#player-timeline{
+    width: 100%;
+    height: 0.5px;                    
+    background-color: white;                   
+}
+
+#player-timeline-playhead {
+    width: 10px;
+    height: 10px;
+    background-color: white;
+    border-radius: 50%;             
+    position: absolute;
+    left: 0%;                      
+    bottom: -5px;                       
+}
+
+#player-timecode-wrapper {
+    margin-top: 8px;
+    width: 100%;                                                   
+    display: flex;                                                 
+    justify-content: space-between;                                        
+}
+
+.player-timecode {
+    color: white;                                                  
+    font-weight: lighter;
+}
+
+#player-title-wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;                          
+    align-items: center;
+    margin-top: 8px;    
+
+}
+
+.player-change {                                             
+    background: none;                                        
+    margin: 0 -12px 0 -12px;                                               
+    padding: 0;
+    width: 40px; 
+    height: 40px;
+    border: none;
+
+}
+
+#player-previous #arrow {
+    transform: rotate(180deg);
+}
+
+#player-info {
+    width: 60px;
+    height: 40px;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 13px;    
+}
+
+#player-info #arrow{
+    transform: rotate(90deg);
+}
+#arrow {
+    color: white;
+    width: 100%;
+    height: 100%;
+}
+
+#player-title {
+    color: white;
+    font-size: 20px;
+}
+
+
+#player-description {
+    margin-top: 6px;          
+    margin-bottom: 24px;
+    width: 80%;                
+    font-weight: lighter;      
+    color: white;
+    font-size: 13px;
+    line-height: 1.6;          
+    position: relative;
+    opacity: 1;
+    user-select: none;  
+    transition: opacity 1s ease;
+}
+
+.player-description--hidden {
+    position: absolute !important;
+    opacity: 0 !important;                                  
+    transition: opacity 0s !important;
+}
+
+#player-next svg path, #player-previous svg path {
+    stroke: white;
+    stroke-width: 0;
+
+    transition: stroke-width .5s ease;
+}
+
+#player-next:hover svg path, #player-previous:hover svg path {
+    stroke: white;
+    stroke-width: 15;
+}
