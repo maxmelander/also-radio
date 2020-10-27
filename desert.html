@@ -320,9 +320,6 @@
               stroke-width: 15;
           }
 
-          #fps {
-              color: white;
-          }
     </style>
 </head>
 <body>
@@ -398,7 +395,6 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
         <button id="player-info">˅ info</button>
         <div id="player-description" class="player-description--hidden"></div>
     </div>
-    <div id="fps"></div>
     </div>
     <script type="text/javascript" src=
     "https://rawgit.com/patriciogonzalezvivo/glslCanvas/master/dist/GlslCanvas.js">
@@ -540,7 +536,7 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
             float fh = -1.0 + (0.6 + amp) * (sharpTriangleWave(-0.2 + (0.1*pos.x) + 0.17*smoothTriangleWave(pos.x*0.1) + 0.3*smoothTriangleWave(pos.x*0.02)) + smoothTriangleWave(0.06*pos.z + 0.01*smoothTriangleWave(pos.z*0.2)));
             fh += pow(abs(fh), 1.7);
 
-            float hf = smoothTriangleWave(3.6*(pos.z + 0.02*smoothTriangleWave((pos.x + (u_time * 0.9)) * 2.6))); //+ smoothTriangleWave(20.*pos.y);
+            float hf = smoothTriangleWave(3.6*(pos.z + 0.02*smoothTriangleWave((pos.x + (u_time * 0.9)) * 2.6)));
             float hf2 = smoothTriangleWave(2.*pos.x + (u_time * 1.));
 
             float d = pos.y - (fh + ((0.138*(u_high*2.4))* hf * (clamp(-pos.y + 0.2, 0., 1.))) + (0.0026 * hf2 * (pos.y)));
@@ -574,22 +570,20 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
         }
 
       vec2 map(vec3 pos, vec3 mb_p_2, vec3 mb_p_3) {
-            float d = -1.0;
-
             // Metaballs
             vec3 ball_pos = pos;
-            ball_pos.x = mod(abs(ball_pos.x), 5.0) - 1.5;
-            ball_pos.z += 0.3 * (((smoothTriangleWave(abs(ball_pos.z * 0.5)) + 1.) / 2.) - 0.5);
+            if (u_distort == 1.) {
+                ball_pos.x = mod(abs(ball_pos.x), 5.0) - 1.5;
+                ball_pos.z += 0.3 * (((smoothTriangleWave(abs(ball_pos.z * 0.5)) + 1.) / 2.) - 0.5);             
+            }
+            float d1 = sdMetaballs(ball_pos, mb_p_2, mb_p_3);
 
-
-            float d1 = sdMetaballs(mix(pos, ball_pos, u_distort), mb_p_2, mb_p_3);
-                                                                     
             // Ground
             float d2 = sdDesert(pos);
 
             // Combine
-            d = smin(d1, d2, 0.5);
-
+            float d = smin(d1, d2, 0.5);
+              
             if (d1 < d2) {
                 return vec2(d, 1.7);
             } else {
@@ -899,8 +893,8 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
 
       const fs = document.getElementById("FSHADER_SOURCE").textContent;
       const canvas = document.getElementById("also-radio-canvas");
-      canvas.width = canvas.clientWidth * 2;
-      canvas.height = canvas.clientHeight * 2;
+      canvas.width = canvas.clientWidth * 2.0;
+      canvas.height = canvas.clientHeight * 2.0;
       const glslCanvas = new GlslCanvas(canvas);
       glslCanvas.load(fs);
 
@@ -938,6 +932,18 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
       let timeout;
       let hideControls = false;
 
+      // dynamic framerate and frame locking
+      let cssAnimating = false;
+      let frameRateSum = 0;
+      let frameCount = 0
+      let numOffenses = 0;
+      const MIN_FRAME_RATE = 45;
+      const NUM_AVERAGE_FRAMES = 20;
+      const FPS_LIMIT = 60;
+
+      let previousTimestamp = 0;
+
+
       const setUniform = (name, value) => {
           try {
               glslCanvas.setUniform(name, value);
@@ -952,20 +958,25 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
           return `${formattedMinutes}:${formattedSeconds}`;
       }
 
+          const playerTitleElement = document.getElementById("player-title");
+          const timecodeRightElement = document.getElementById("player-timecode--right");
+          const descriptionElement = document.getElementById("player-description");
+          const playerElement = document.getElementById("player");
+
       const updateUIInfo = () => {
           const track = tracks[selectedTrack];
-          document.getElementById("player-title").innerHTML = track.title;
-          document.getElementById("player-timecode--right").innerHTML = getFormattedNumber(track.duration / 1000);
-          document.getElementById("player-description").innerHTML = track.description;
+          playerTitleElement.innerHTML = track.title;
+          timecodeRightElement.innerHTML = getFormattedNumber(track.duration / 1000);
+          descriptionElement.innerHTML = track.description;
           if (hideControls) {
-              document.getElementById("player").classList.add("player--hidden");
+              playerElement.classList.add("player--hidden");
           } else {
-              document.getElementById("player").classList.remove("player--hidden");
+              playerElement.classList.remove("player--hidden");
           }
       }
 
+      const buttonElement = document.getElementById("player-button");
       const updatePlayerButton = () => {
-          const buttonElement = document.getElementById("player-button");
           if (isPlaying) {
               buttonElement.classList.add("player-button--play");
               buttonElement.classList.remove("player-button--pause");
@@ -984,9 +995,6 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
           }
 
           const data = await response.json();
-
-          console.log("got the data");
-
           tracks = await Promise.all(data.map(async track => {
               const streamsResponse = await fetch(getStreamsUrl(track.id));
               const streamsData = await streamsResponse.json();
@@ -998,7 +1006,7 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
                   duration: track.duration,
                   streamUrl: streamsData.http_mp3_128_url,
               }
-
+              
               return t;
           }));
 
@@ -1101,12 +1109,23 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
 
           timeout = window.setTimeout(() => {
               if (isPlaying) {
+                  cssAnimating = true;
+                  // We dont want wonky css animations
+                  // to mess with the dynamic resolution
+                  window.setTimeout(() => {
+                      cssAnimating = false;
+                  }, 3000);
+
                   hideControls = true;
                   updateUIInfo();
               }
           }, 3000);
 
           if (hideControls) {
+              cssAnimating = true;
+              window.setTimeout(() => {
+                  cssAnimating = false;
+              }, 3000);
               hideControls = false;
               updateUIInfo();
           }
@@ -1235,21 +1254,52 @@ d="M29,60.01V26.23l29.25,16.89L29,60.01z M31,29.7v26.85l23.25-13.42L31,29.7z" />
           updateUniforms();         
       }
 
-      function update(timestamp){
-          timestamp = timestamp;
-
-     
-          updateAnimationVariables(timestamp);
-
+      // Dynamic resolution
+      const checkFps = timestamp => {
           const fps = 1 / ((timestamp - lastTime) / 1000);
-          document.getElementById("fps").innerHTML = fps;
+
+          frameRateSum += fps
+          frameCount += 1;
+
+          if (frameCount === NUM_AVERAGE_FRAMES) {
+              const framerate = Math.floor(frameRateSum / NUM_AVERAGE_FRAMES);
+              frameCount = 0;
+              frameRateSum = 0;
+
+              if (framerate && framerate < MIN_FRAME_RATE) {
+                  numOffenses += 1;
+
+                  if (numOffenses > 3) {
+                      canvas.width /= 1.2;
+                      canvas.height /= 1.2; 
+                      numOffenses = 0;
+                  }
+              }
+          }         
 
           lastTime = timestamp;
+      }
 
+      const timecodeLeftElement = document.getElementById("player-timecode--left");
+      const playheadElement = document.getElementById("player-timeline-playhead");
+
+      function update(timestamp){
+          timestamp = timestamp;
+              
+          if (!cssAnimating) {
+              checkFps(timestamp);
+          }
+
+          const delta = timestamp - previousTimestamp;
+          if (delta > (1000/FPS_LIMIT - 0.1)) {
+              updateAnimationVariables(timestamp);
+              previousTimestamp = timestamp;
+          }    
+              
           // Update HTML
-          document.getElementById("player-timecode--left").innerHTML = getFormattedNumber(audioElement.currentTime);
+          timecodeLeftElement.innerHTML = getFormattedNumber(audioElement.currentTime);
           const percentage = (audioElement.currentTime / audioElement.duration) * 100;
-          document.getElementById("player-timeline-playhead").style.left = `${percentage}%`;
+          playheadElement.style.left = `${percentage}%`;
           window.requestAnimationFrame(update);
 
       }
