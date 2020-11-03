@@ -1,4 +1,5 @@
 /*
+// Author: Max Melander
 // Written in a month in bits and pieces after work to learn about ray marching!
 // Most of the actual ray marching was written following Inigo Quilez's
 // Youtube deconstruction of his Happy Jumping shader https://www.youtube.com/watch?v=Cfe5UQ-1L9Q&t=7113s
@@ -47,7 +48,7 @@ vec3 _GlitterColor_0 = vec3(0.5, 0.5, 0.3);
 vec3 _OceanColor_0 = vec3(10.0, 10.0, 5.0);
 vec3 _DistanceColor_0 = vec3(0.3, 0.3, 0.35);
 vec3 _SphereSpecColor_0 = vec3(3.0, 3.0, 2.0);
-vec3 _FresnelColor_0 = vec3(1.0, 0.5, 0.5);
+vec3 _FresnelColor_0 = vec3(0.8, 0.8, 1.2);
 
 // Night
 vec3 _SkyTopColor_1 = vec3(0.00, 0.00, 0.01);
@@ -285,10 +286,9 @@ float diffuse(vec3 n, vec3 l) {
     return nDotL;
 }
 
-float rim(vec3 n, vec3 v) {
-    float rim = 1.0 - clamp(dot(n, v), 0.0, 1.0);
-    rim = clamp(pow(rim, 60.3) * 0.9, 0.0, 1.0);
-    return rim;
+vec3 rim(vec3 N, vec3 I) {
+    vec3 F0 = vec3(0.0);
+    return F0 + (1.0 - F0) * pow(1.0 - (dot(N, I)), 36.0);
 }
 
 float oceanSpecular(vec3 n, vec3 l, vec3 v) {
@@ -350,16 +350,25 @@ vec3 fresnelSchlick(vec3 N, vec3 I){
 
 vec3 starColor(vec2 uv) {
     vec2 star_uv = uv  * 12.;
-    vec2 star_gv = fract(star_uv) - .5;
+
+    float s = sin(u_time * .03 * (1.-u_tod));
+    float c = cos(u_time * .03 * (1.-u_tod));
+    mat2 m = mat2(c, -s, s, c);
+    star_uv *= m;
+                         
+    vec2 star_gv = fract(star_uv) - .5; 
     vec2 star_id = floor(star_uv);
 
     float star_noise = hash21(star_id);
-    float star_distance = length(vec2(star_gv.x + ((star_noise - .5)), star_gv.y + (fract(star_noise * 94.281)-.5))) * 7.;
+    float star_noise_2 = fract(star_noise * 94.281)-.5;
+    float star_distance = length(vec2(star_gv.x + ((star_noise - .5)), star_gv.y + star_noise_2)) * 7.;
     float star_strength = smoothstep(.15, .05, star_distance);
     float star_glow = smoothstep(2.35, .005, star_distance);
 
-    return vec3(star_strength*((star_noise * .1) + (u_mid * 0.8))) + (0.0015 * vec3(star_glow)) * vec3(star_noise);
-}
+    float star_value = star_strength*((star_noise * .1) + (u_mid * 0.8));
+
+    return vec3(star_value * (star_noise * 2.), star_value, star_value * (star_noise_2 * 2.)) + (0.0015 * vec3(star_glow)) * vec3(star_noise);
+}                        
 
 vec3 logoColor(vec2 uv) {
     vec2 logo_uv = uv * 1.8;
@@ -443,13 +452,12 @@ void main() {
         float sky_dif = 0.9 * diffuse(sand_nor, vec3(0.0, 1.0, 0.0));
         float bounce_dif = clamp(0.5 + 0.3*dot(sand_nor, vec3(0.0, -1.0, 0.0)), 0.0, 1.0);
         float sun_dif = diffuse(sand_nor, sun_dir);
-        float rim = rim(sand_nor, -rd);
-        float oceanSpec = oceanSpecular(sand_nor, ocean_light, -rd) / (t/ 2.);
-        float spec = max(rim, oceanSpec) / (t);
+        vec3 rim = rim(sand_nor, -rd);
+        float spec = oceanSpecular(sand_nor, ocean_light, -rd) / (t/ 2.);;
 
         vec3 glitterNoise = vec3(snoise(uv*300.), snoise(uv*400.), snoise(uv*440.));
         float glitterSpec = glitterSpecular(uv, sun_dir, -rd, 0.9, glitterNoise) / (t/ 1.5);
-        float glitterSpecLots = glitterSpecular(uv, sun_dir, -rd, 0.2, glitterNoise) / (t/2.);
+        float glitterSpecLots = glitterSpecular(uv, sun_dir, -rd, 0.3, glitterNoise) / (t / 1.5);
 
         vec3 mate = _SandColor;
         if (tm.y > 1.5) {
@@ -470,6 +478,7 @@ void main() {
             _OceanColor = vec3(_OceanColor.r + (u_mid * 0.4), _OceanColor.g, _OceanColor.b + (u_mid * 0.1));
             col += (glitterSpec * sun_dif * _GlitterColor * sun_sha);
             col += (spec * glitterSpecLots * _OceanColor * sun_sha);
+            col += ((rim * _OceanColor * sun_sha * 0.3) / (t / 2.));
         } else { // Sphere
             vec3 fresnel = fresnelSchlick(sand_nor, -rd);
             col += _SphereSpecColor * spec;
@@ -487,4 +496,3 @@ void main() {
     col.g = mix(col.g, 0.1 - col.g, u_distort_3 * (u_bass * 0.7));
 
     gl_FragColor = vec4(col, 1.0);
-}
